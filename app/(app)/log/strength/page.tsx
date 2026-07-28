@@ -4,6 +4,7 @@ import { getProfile } from "@/lib/services/profileService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { resolveStrengthWorkout } from "@/lib/services/workoutContentService";
 import { todayLocalDate } from "@/lib/date";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 import { StrengthLogForm } from "./strength-form";
 
 export default async function LogStrengthPage() {
@@ -12,7 +13,7 @@ export default async function LogStrengthPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const profile = await getProfile(supabase, user!.id);
-  if (!profile) return <div className="card">No profile found.</div>;
+  if (!profile) return <SeedProfileButton />;
 
   const localDate = todayLocalDate(profile.timezone);
   const workout = await getPlannedWorkoutForDate(supabase, user!.id, localDate);

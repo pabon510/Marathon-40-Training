@@ -9,6 +9,7 @@ import {
   getWeeklyStrengthCompletion,
 } from "@/lib/services/progressService";
 import { addDays, mondayOfWeek, todayLocalDate } from "@/lib/date";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -16,7 +17,7 @@ export default async function ProgressPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const profile = await getProfile(supabase, user!.id);
-  if (!profile) return <div className="card">No profile found.</div>;
+  if (!profile) return <SeedProfileButton />;
 
   const today = todayLocalDate(profile.timezone);
   const weekStart = mondayOfWeek(today);

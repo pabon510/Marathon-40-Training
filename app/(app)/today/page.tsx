@@ -4,6 +4,7 @@ import { getProfile } from "@/lib/services/profileService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { todayLocalDate } from "@/lib/date";
 import { WORKOUT_KIND_LABELS } from "@/lib/labels";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 import { CheckInForm } from "./checkin-form";
 
 const STRENGTH_KINDS = new Set(["strength_a", "strength_b", "strength_full", "combined_short", "upper_core_safety"]);
@@ -16,7 +17,7 @@ export default async function TodayPage() {
   const profile = await getProfile(supabase, user!.id);
 
   if (!profile) {
-    return <div className="card">No profile found. Run the seed script first (see README).</div>;
+    return <SeedProfileButton />;
   }
 
   const localDate = todayLocalDate(profile.timezone);

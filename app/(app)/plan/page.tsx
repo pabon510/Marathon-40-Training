@@ -4,6 +4,7 @@ import { getProfile } from "@/lib/services/profileService";
 import { getPlanChangesForRange, getPlannedWorkoutsForRange } from "@/lib/services/planService";
 import { todayLocalDate, mondayOfWeek, addDays } from "@/lib/date";
 import { WORKOUT_KIND_LABELS, STATUS_LABELS } from "@/lib/labels";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 
 export default async function PlanPage() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export default async function PlanPage() {
   const profile = await getProfile(supabase, user!.id);
 
   if (!profile) {
-    return <div className="card">No profile found. Run the seed script first (see README).</div>;
+    return <SeedProfileButton />;
   }
 
   const today = todayLocalDate(profile.timezone);

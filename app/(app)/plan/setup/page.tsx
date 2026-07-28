@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profileService";
 import { getOrCreateWeeklySetup, suggestedNextWeekStart } from "@/lib/services/planService";
 import { todayLocalDate, addDays } from "@/lib/date";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 import { WeeklySetupForm } from "./setup-form";
 
 export default async function PlanSetupPage() {
@@ -12,7 +13,7 @@ export default async function PlanSetupPage() {
   const profile = await getProfile(supabase, user!.id);
 
   if (!profile) {
-    return <div className="card">No profile found. Run the seed script first (see README).</div>;
+    return <SeedProfileButton />;
   }
 
   const { data: latestSetup } = await supabase

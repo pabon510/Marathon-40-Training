@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profileService";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
@@ -11,11 +12,9 @@ export default async function SettingsPage() {
 
   if (!profile) {
     return (
-      <div className="card">
-        <h1 className="text-lg font-bold">Settings</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          No profile found yet. Run the seed script (see README) to create the initial profile for this account.
-        </p>
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold text-slate-900">Settings</h1>
+        <SeedProfileButton />
       </div>
     );
   }

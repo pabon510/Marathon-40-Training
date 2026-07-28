@@ -6,6 +6,7 @@ import { resolveStrengthWorkout } from "@/lib/services/workoutContentService";
 import { todayLocalDate } from "@/lib/date";
 import { WORKOUT_KIND_LABELS } from "@/lib/labels";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import { SeedProfileButton } from "@/components/seed-profile-button";
 import { LocationToggle } from "./location-toggle";
 import { GuidedMode } from "./guided-mode";
 
@@ -18,7 +19,7 @@ export default async function WorkoutsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const profile = await getProfile(supabase, user!.id);
-  if (!profile) return <div className="card">No profile found. Run the seed script first (see README).</div>;
+  if (!profile) return <SeedProfileButton />;
 
   const localDate = todayLocalDate(profile.timezone);
   const workout = await getPlannedWorkoutForDate(supabase, user!.id, localDate);
