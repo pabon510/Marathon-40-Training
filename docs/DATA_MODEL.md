@@ -1,0 +1,104 @@
+# Data Model
+
+Use UUID primary keys, `created_at`/`updated_at` timestamps, and `user_id` on user-owned records. RLS must restrict every record to `auth.uid() = user_id`. Enums may be Postgres enums or checked text columns.
+
+## Core tables
+
+### `profiles`
+
+`user_id`, display name, timezone, target marathon date, phase (`base_rebuilding`), easy HR floor/ceiling, calibration end date, preferred long-run day, default available weekdays, equipment JSON, reminder preferences JSON, baseline version.
+
+### `weekly_setups`
+
+`id`, `user_id`, Monday week date, available dates, intended long-run date, backup date, submitted timestamp. Unique per user/week.
+
+### `plan_versions`
+
+`id`, `user_id`, rolling start date, version number, trigger (`initial`, `check_in`, `post_workout`, `missed`, `edit`, `unplanned`), source event id/type, generated timestamp, active flag.
+
+### `planned_workouts`
+
+`id`, plan version, local date, workout kind, priority, status (`provisional`, `confirmed`, `completed`, `partial`, `skipped`, `blocked`, `replaced`, `incomplete`), goal, planned duration, run prescription JSON, strength template id, location choice, shorter alternative JSON, original workout id, completion-credit factor.
+
+Run prescription stores duration, HR target/ceiling, pace context, intervals, walk-break guidance, and calibration flag.
+
+### `plan_changes`
+
+`id`, user, old/new plan versions, local date, old/new workout summaries, reason code, human explanation, triggering values JSON, created timestamp. Display attached to the affected day.
+
+### `morning_check_ins`
+
+`id`, user, local date/time, hours slept, Oura score, energy 1–5, soreness 1–5, stress 1–5, fatigue 1–5, knee 0–10, available minutes, strength location, skipped fields array, refreshed-from id.
+
+Constraints enforce ranges. Only the newest check-in for the day drives the active recommendation.
+
+### `workout_sessions`
+
+`id`, user, planned workout id nullable, type, location, started/completed timestamps, completion state, unplanned flag, override flag/reason, modification reason, overall effort 1–10, expected-feel result, unusual pain flag/details, notes.
+
+### `run_logs`
+
+`workout_session_id`, run type, distance miles, duration seconds, calculated pace, pace override, average HR, maximum HR, elevation gain feet, highest knee during, knee immediately after.
+
+### `run_splits`
+
+`id`, run log/session, ordinal, split distance (default 1 mile), duration seconds or pace seconds/mile.
+
+### `strength_logs`
+
+`id`, session, exercise id, ordinal, prescribed variant id, completed sets, representative/min reps, max reps if needed, load value, load unit, difficulty 1–10, substitution exercise id, notes.
+
+One record represents final summarized values, not each set.
+
+### `post_workout_check_ins`
+
+`id`, session, overall effort, highest knee during, knee immediately after, completed-full boolean, expectation result, unusual pain/details, notes, submitted timestamp.
+
+### `exercise_definitions`
+
+`id`, slug, name, movement pattern, target muscles, equipment, setup, execution, cues JSON, mistakes JSON, stop/substitute guidance, active flag.
+
+### `exercise_variants`
+
+`id`, exercise id, location, equipment requirements, progression methods, contraindication tags, home/gym equivalence group.
+
+### `strength_templates` and `strength_template_items`
+
+Template metadata (goal, emphasis, duration) plus ordered items, set/rep ranges, rest, variant group, optional/finisher flag, and short-version inclusion.
+
+### `safety_events`
+
+`id`, user, source type/id, rule code, knee start/current/change, blocked workout types, offered alternatives, acknowledged timestamp.
+
+### `rule_evaluations`
+
+`id`, user, source type/id, rule-set version, inputs snapshot JSON, matched rules, result JSON, explanation, created timestamp. This is the audit trail.
+
+## Derived data
+
+Prefer database views or query-layer calculations initially:
+
+- Weekly minutes and miles.
+- Adapted-plan completion denominator and credit.
+- Weekly maximum knee and direction.
+- Morning-check-in completion rate.
+- Strength sessions completed.
+- Comparable easy-run pairs and ease outcomes.
+- Personal records and streaks (post-launch).
+
+## Scale definitions
+
+- Energy: 1 depleted, 2 low, 3 normal, 4 good, 5 excellent.
+- Soreness: 1 none, 2 mild, 3 noticeable, 4 high, 5 severe.
+- Stress: 1 very low through 5 overwhelming.
+- Fatigue: 1 fresh, 2 slightly tired, 3 normal, 4 very tired, 5 exhausted.
+- Effort/difficulty: 1 extremely easy, 5 moderate, 7 hard but controlled, 9 very hard, 10 maximal.
+- Knee: 0 no discomfort through 10 worst imaginable.
+
+## Data behavior
+
+- Missing check-in values are `NULL`, never zero/default; persist explicit skip confirmation.
+- Store computed pace and raw distance/duration so calculations are reproducible.
+- Preserve all historical plan versions.
+- Deleting history is not a V1 UI requirement. Editing creates an audit event and may generate a new plan version.
+- Application dates use profile timezone; timestamps remain UTC.
