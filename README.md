@@ -19,9 +19,7 @@ and `AGENTS.md` for build precedence/rules.
 2. In **Project Settings → API**, copy:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (server-only, used
-     solely by the seed script — never put this in `NEXT_PUBLIC_*` or ship
-     it to the browser).
+   - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY`
 3. In **Authentication → Providers**, confirm Email/password is enabled.
 4. In **Authentication → Users**, click **Add user** and manually create
    the one account (email + password). This app has no public
@@ -38,57 +36,73 @@ and `AGENTS.md` for build precedence/rules.
    6. `supabase/migrations/0006_safety_and_rules.sql`
    7. `supabase/migrations/0007_derived_views.sql`
 
-   Once this branch is pushed, open each file directly on GitHub and copy
-   its contents — see the "Direct links to each migration" note the
-   assistant provided after pushing, or browse to
-   `supabase/migrations/` in the repository.
+   Open each file directly on GitHub (in this repo, under
+   `supabase/migrations/`) and copy its contents into the SQL Editor.
 
    Every table has row-level security enabled and policies restricting
    rows to `auth.uid() = user_id` (exercise library/template tables are
    shared read-only reference data, readable by any authenticated user).
 
-## 2. Environment variables
+## 2. Environment variables (Vercel — no local `.env.local` needed)
 
-Copy `.env.example` to `.env.local` and fill in the values from step 1:
+Set all three of these as Vercel Environment Variables (Project Settings →
+Environment Variables), for Production (and Preview if you use it):
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-APP_TIMEZONE=America/New_York
-SEED_USER_EMAIL=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` and `SEED_USER_EMAIL` are only read by
-`scripts/seed-profile.ts` (a standalone Node script, never imported by any
-app/route code) — set them locally only when you run the seed script, and
-never add them to Vercel's client-exposed environment variables.
+All three are safe to set in Vercel. Only variables prefixed
+`NEXT_PUBLIC_` are ever bundled into browser-sent JavaScript;
+`SUPABASE_SERVICE_ROLE_KEY` stays server-side and is read only by the
+`POST /api/admin/seed` route (see step 3) — nothing in the client bundle
+imports it. Redeploy after adding/changing env vars so the running
+deployment picks them up.
 
-On Vercel, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-for the Production/Preview environments. The service-role key does not need
-to be on Vercel at all unless you want to run the seed script from CI.
+`.env.example` in this repo documents the same variables for anyone who
+also wants to run the app locally, plus `APP_TIMEZONE` and
+`SEED_USER_EMAIL`, which only matter for the optional local script covered
+at the end of step 3 — most people can ignore both.
 
-## 3. Install and seed (one terminal step, optional two)
+## 3. Seed the profile and exercise library — no terminal needed
+
+Once your Supabase project has the migrations applied and Vercel has the
+three env vars from step 2 (redeployed), do this entirely in the browser:
+
+1. Sign in to your deployed app with the account you created in step 1.4.
+2. You'll land on a page with a **"Set up profile"** button (Today,
+   Settings, or wherever you land first — it appears anywhere the app
+   notices your profile doesn't exist yet). Click it.
+3. That's it. It upserts the curated exercise library (33 exercises, 4
+   strength templates) and creates your profile from the app's built-in
+   defaults, then refreshes the page.
+
+This is backed by `POST /api/admin/seed`, gated by your login (it uses
+your own authenticated session to know which account to seed — no separate
+secret needed). It's **idempotent**: safe to click again later (e.g. after
+pulling updated exercise content) — it will never overwrite your profile
+once it exists, only re-sync the shared exercise-library content.
+
+<details>
+<summary>Optional: local script (for local development or CI only)</summary>
+
+If you're running the app locally (`npm run dev`) rather than only using
+the deployed Vercel app, `npm run seed` does the same thing from your
+machine instead of a browser session. It needs `.env.local` (copy from
+`.env.example`) with `SUPABASE_SERVICE_ROLE_KEY` and `SEED_USER_EMAIL` (your
+account's email, since there's no browser session to read it from) set
+locally:
 
 ```
 npm install
 npm run seed
 ```
 
-`npm run seed` is **idempotent**:
-
-- It upserts the curated exercise library (exercise definitions, gym/home
-  variants, and the four strength templates) — safe to re-run any time you
-  pull updated content.
-- It inserts Andrew's profile from `config/profile.json` **only if no
-  profile row exists yet** for `SEED_USER_EMAIL`. It never overwrites a
-  live profile. See `docs/TRAINING_PROFILE.md` for the human-readable
-  baseline/injury history behind those seed values.
-
-If you'd rather not use a terminal at all: the SQL migrations can be
-copy-pasted (step 1 above), but `npm run seed` needs Node.js since it also
-computes derived values — there isn't a SQL-only equivalent for it in this
-version.
+Most people deploying only to Vercel don't need this at all — use the
+in-app button above instead.
+</details>
 
 ## 4. Run locally
 
@@ -161,6 +175,7 @@ app/
   (app)/log/run|strength  logging + integrated post-workout check-in; log/skip
   (app)/progress/         weekly totals, ease trend, knee chart, 4-week scorecard
   (app)/settings/         editable profile fields
+  api/admin/seed/         session-gated one-click profile/library setup (see step 3)
 domain/                   pure, unit-tested deterministic rules (no Supabase imports)
   safety/                 hard-block evaluation
   adaptation/             knee + recovery rules, orchestrator
@@ -171,10 +186,11 @@ domain/                   pure, unit-tested deterministic rules (no Supabase imp
 lib/
   supabase/               browser/server/admin clients, hand-authored DB types
   services/                Supabase-backed services that call the domain layer
+  seed/                   shared seed logic used by both /api/admin/seed and scripts/seed-profile.ts
   date.ts, labels.ts, env.ts
 config/profile.json         seed source for the one profile row
 supabase/migrations/         SQL migrations (apply via Supabase SQL Editor)
-scripts/seed-profile.ts      idempotent seed script
+scripts/seed-profile.ts      optional local/CI seed script (most people use the in-app button instead)
 docs/                        product specification (read-only reference)
 ```
 
