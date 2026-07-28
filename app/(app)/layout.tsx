@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </button>
           </form>
         </header>
-        <main className="flex-1 pb-20 md:pb-6">
+        <main className="flex-1 pb-24 md:pb-6">
           <div className="mx-auto w-full max-w-3xl px-4 py-4 md:px-8 md:py-6">{children}</div>
         </main>
         <BottomNav />
