@@ -1,0 +1,26 @@
+{
+  "displayName": "Andrew",
+  "timezone": "America/New_York",
+  "targetMarathonDate": null,
+  "phase": "base_rebuilding",
+  "easyHrFloor": 140,
+  "easyHrCeiling": 150,
+  "calibrationEndDate": null,
+  "preferredLongRunDay": "saturday",
+  "defaultAvailableWeekdays": ["tuesday", "thursday", "friday", "saturday"],
+  "equipment": {
+    "home": {
+      "dumbbellsLb": [15, 25],
+      "bands": true,
+      "bench": true,
+      "adjustableKettlebellLb": [15, 25, 35, 45]
+    },
+    "gym": "planet_fitness"
+  },
+  "reminderPreferences": {
+    "morningCheckinEmail": false,
+    "weeklyPlanningEmail": false,
+    "unloggedWorkoutEmail": false
+  },
+  "baselineVersion": 1
+}
