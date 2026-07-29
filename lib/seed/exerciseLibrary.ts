@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
-import { EXERCISES, TEMPLATES, getExerciseMetadataV2 } from "@/domain/content/exerciseLibrary";
+import {
+  EXERCISES,
+  EXERCISE_HISTORY_COMPATIBILITY,
+  TEMPLATES,
+  getExerciseMetadataV2,
+} from "@/domain/content/exerciseLibrary";
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -84,6 +89,21 @@ export async function seedExerciseLibrary(admin: AdminClient) {
       { onConflict: "exercise_id,location,equivalence_group" },
     );
     if (upsertError) throw new Error(`Failed to upsert variants for "${exercise.slug}": ${upsertError.message}`);
+  }
+
+  if (EXERCISE_HISTORY_COMPATIBILITY.length > 0) {
+    const { error: compatibilityError } = await admin.from("exercise_history_compatibility").upsert(
+      EXERCISE_HISTORY_COMPATIBILITY.map((edge) => ({
+        source_exercise_id: exerciseIdBySlug.get(edge.sourceSlug)!,
+        target_exercise_id: exerciseIdBySlug.get(edge.targetSlug)!,
+        compatibility_scope: edge.compatibilityScope,
+        notes: edge.notes,
+      })),
+      { onConflict: "source_exercise_id,target_exercise_id" },
+    );
+    if (compatibilityError) {
+      throw new Error(`Failed to upsert exercise history compatibility: ${compatibilityError.message}`);
+    }
   }
 
   for (const template of TEMPLATES) {
