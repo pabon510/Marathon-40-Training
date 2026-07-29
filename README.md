@@ -178,6 +178,7 @@ app/
   (app)/plan/             rolling week + change history; plan/setup for weekly availability
   (app)/workouts/         full overview + guided mode, gym/home/short toggle
   (app)/log/run|strength  logging + integrated post-workout check-in; log/skip
+  (app)/history/          past sessions; history/[id] edits them with material-change recalculation
   (app)/progress/         weekly totals, ease trend, knee chart, 4-week scorecard
   (app)/settings/         editable profile fields
   api/admin/seed/         session-gated one-click profile/library setup (see step 3)
@@ -216,10 +217,17 @@ docs/                        product specification (read-only reference)
   planned workouts in response to an unplanned session is not wired end-to-
   end in the UI in this pass — recalculation is fully wired for morning
   check-ins (knee/recovery/time) and for explicit skips.
-- **Editing completed logs**: the data model and material-vs-notes-only
-  distinction are designed for it (see `docs/BUILD_PLAN.md`), but the edit-
-  existing-log UI (as opposed to creating a new log) isn't built yet —
-  logs can currently be created but not edited from the UI.
+- **Editing completed logs**: available at `/history` (linked from Progress
+  and from the confirmation shown after logging). Run and strength sessions
+  can be corrected, including their post-workout check-in values. A
+  material change — knee scores, effort, completion, distance/duration,
+  run classification, or strength load — re-derives completion credit,
+  writes a `rule_evaluations` audit row, and raises a safety event if the
+  corrected knee values cross the hard-stop threshold. A notes-only edit
+  changes nothing else, per `docs/BUILD_PLAN.md`. Two caveats: editing
+  sets/reps/load clears any per-set "sets differed" detail for that
+  exercise (it would otherwise contradict the summary), and cross-training
+  /mobility sessions are not editable yet.
 - **Preliminary tomorrow impact**: implemented as an immediate, computed
   (not persisted) preview shown right after logging a run, per
   docs/ADAPTATION_RULES.md's "show preliminary tomorrow impact, then

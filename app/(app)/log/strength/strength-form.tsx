@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { RedFlagWarning } from "@/components/red-flag-warning";
@@ -45,8 +46,11 @@ export function StrengthLogForm({
 
   if (state.success) {
     return (
-      <div className="card">
+      <div className="card space-y-2">
         <p className="text-sm font-semibold text-safety-ok">Strength workout logged.</p>
+        <Link href="/history" className="text-sm text-brand-700 underline">
+          View or correct it in history
+        </Link>
       </div>
     );
   }
