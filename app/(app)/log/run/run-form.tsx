@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { RedFlagWarning } from "@/components/red-flag-warning";
 import { logRunAction, type LogRunFormState } from "./actions";
@@ -16,6 +17,9 @@ export function RunLogForm() {
       <div className="card space-y-2">
         <p className="text-sm font-semibold text-safety-ok">Run logged.</p>
         {state.tomorrowPreview ? <p className="text-sm text-slate-600">{state.tomorrowPreview}</p> : null}
+        <Link href="/history" className="text-sm text-brand-700 underline">
+          View or correct it in history
+        </Link>
       </div>
     );
   }

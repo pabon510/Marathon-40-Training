@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profileService";
 import {
@@ -47,7 +48,12 @@ export default async function ProgressPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-slate-900">Progress</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-slate-900">Progress</h1>
+        <Link href="/history" className="btn-secondary">
+          History
+        </Link>
+      </div>
 
       <div className="card">
         <p className="text-sm font-semibold text-slate-900">This week</p>
