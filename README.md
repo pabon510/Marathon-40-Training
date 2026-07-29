@@ -176,8 +176,9 @@ app/
   (auth)/login/          sign-in (no registration)
   (app)/today/            provisional workout, morning check-in, recommendation
   (app)/plan/             rolling week + change history; plan/setup for weekly availability
-  (app)/workouts/         full overview + guided mode, gym/home/short toggle
-  (app)/log/run|strength  logging + integrated post-workout check-in; log/skip
+  (app)/workouts/         read-only full overview + gym/home/short toggle; "Start logging" continues below
+  (app)/log/run|strength  guided step-by-step: instructions + logging fields together, one exercise at a
+                          time with Back/Next; integrated post-workout check-in; log/skip
   (app)/history/          past sessions; history/[id] edits them with material-change recalculation
   (app)/progress/         weekly totals, ease trend, knee chart, 4-week scorecard
   (app)/settings/         editable profile fields
@@ -270,10 +271,12 @@ docs/                        product specification (read-only reference)
 3. `/today`: complete the morning check-in (try knee = 7 once, to see the
    hard block) → confirmed/adapted recommendation with a plain-language
    reason appears.
-4. `/workouts`: toggle gym/home, open guided mode, step through an
-   exercise's full content.
-5. `/log/run` or `/log/strength`: log a workout + the integrated post-
-   workout check-in.
+4. `/workouts`: toggle gym/home, review the full overview, then tap
+   "Start logging" for a strength/combined workout.
+5. `/log/run` or `/log/strength`: step through the workout exercise by
+   exercise — setup/execution/cues and the load/reps/difficulty fields are
+   on the same card, with Back/Next between exercises — then complete the
+   integrated post-workout check-in.
 6. `/plan`: confirm the change history shows the reason for anything that
    was adapted.
 7. `/progress`: confirm weekly totals and the 4-week scorecard render.

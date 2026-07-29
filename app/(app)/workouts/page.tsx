@@ -10,7 +10,6 @@ import { SeedProfileButton } from "@/components/seed-profile-button";
 import { LoadGuidance } from "@/components/load-guidance";
 import { attachLoadGuidance } from "@/lib/services/strengthGuidanceService";
 import { LocationToggle } from "./location-toggle";
-import { GuidedMode } from "./guided-mode";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 const STRENGTH_KINDS: WorkoutKind[] = ["strength_a", "strength_b", "strength_full", "upper_core_safety"];
@@ -79,8 +78,6 @@ export default async function WorkoutsPage() {
             ))}
           </ol>
         </div>
-
-        <GuidedMode items={guidedItems} />
       </div>
     );
   }
@@ -118,7 +115,9 @@ export default async function WorkoutsPage() {
       {strengthSection}
 
       <Link href={STRENGTH_KINDS.includes(kind) || kind === "combined_short" ? "/log/strength" : "/log/run"} className="btn-primary flex justify-center">
-        Log this workout
+        {STRENGTH_KINDS.includes(kind) || kind === "combined_short"
+          ? "Start logging, exercise by exercise"
+          : "Log this workout"}
       </Link>
     </div>
   );

@@ -65,6 +65,10 @@ export function StrengthLogForm({
     setExpandedIndex(nextIncomplete === -1 ? null : nextIncomplete);
   }
 
+  function goBack(index: number) {
+    setExpandedIndex(Math.max(0, index - 1));
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     if (confirmedRef.current) return; // already confirmed; let it through
     const found = findMissing(items, entries);
@@ -125,6 +129,7 @@ export function StrengthLogForm({
               onChange={(patch) => updateEntry(i, patch)}
               onToggleExpand={() => setExpandedIndex(expandedIndex === i ? null : i)}
               onMarkDone={() => markDone(i)}
+              onBack={i > 0 ? () => goBack(i) : null}
             />
           </div>
         );
