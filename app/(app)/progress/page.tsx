@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import {
   computeFourWeekScorecard,
@@ -14,32 +15,29 @@ import { SeedProfileButton } from "@/components/seed-profile-button";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
   if (!profile) return <SeedProfileButton />;
 
   const today = todayLocalDate(profile.timezone);
   const weekStart = mondayOfWeek(today);
 
-  const { data: earliestVersion } = await supabase
-    .from("plan_versions")
-    .select("rolling_start_date")
-    .eq("user_id", user!.id)
-    .order("rolling_start_date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  const programStart = earliestVersion?.rolling_start_date ?? weekStart;
-
-  const [runTotals, strength, planCompletionRate, trend, dailyKnee, scorecard] = await Promise.all([
+  const [runTotals, strength, planCompletionRate, trend, dailyKnee, { data: earliestVersion }] = await Promise.all([
     getWeeklyRunTotals(supabase, user!.id, weekStart),
     getWeeklyStrengthCompletion(supabase, user!.id, weekStart),
     getWeeklyPlanCompletion(supabase, user!.id, weekStart),
     getComparableRunTrend(supabase, user!.id, addDays(today, -90)),
     getDailyKneeScores(supabase, user!.id, addDays(today, -13), today),
-    computeFourWeekScorecard(supabase, user!.id, programStart),
+    supabase
+      .from("plan_versions")
+      .select("rolling_start_date")
+      .eq("user_id", user!.id)
+      .order("rolling_start_date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ]);
+  const programStart = earliestVersion?.rolling_start_date ?? weekStart;
+  const scorecard = await computeFourWeekScorecard(supabase, user!.id, programStart);
 
   const kneeSummary =
     dailyKnee.length === 0

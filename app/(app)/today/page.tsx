@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { todayLocalDate } from "@/lib/date";
@@ -11,9 +12,7 @@ const STRENGTH_KINDS = new Set(["strength_a", "strength_b", "strength_full", "co
 
 export default async function TodayPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
 
   if (!profile) {
@@ -21,16 +20,18 @@ export default async function TodayPage() {
   }
 
   const localDate = todayLocalDate(profile.timezone);
-  const workout = await getPlannedWorkoutForDate(supabase, user!.id, localDate);
 
-  const { data: latestCheckIn } = await supabase
-    .from("morning_check_ins")
-    .select("*")
-    .eq("user_id", user!.id)
-    .eq("local_date", localDate)
-    .order("check_in_time", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [workout, { data: latestCheckIn }] = await Promise.all([
+    getPlannedWorkoutForDate(supabase, user!.id, localDate),
+    supabase
+      .from("morning_check_ins")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("local_date", localDate)
+      .order("check_in_time", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (!workout) {
     return (

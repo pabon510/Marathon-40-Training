@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import { getOrCreateWeeklySetup, suggestedNextWeekStart } from "@/lib/services/planService";
 import { todayLocalDate, addDays } from "@/lib/date";
@@ -7,9 +8,7 @@ import { WeeklySetupForm } from "./setup-form";
 
 export default async function PlanSetupPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
 
   if (!profile) {

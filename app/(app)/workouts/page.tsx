@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { resolveStrengthWorkout } from "@/lib/services/workoutContentService";
@@ -16,9 +17,7 @@ const STRENGTH_KINDS: WorkoutKind[] = ["strength_a", "strength_b", "strength_ful
 
 export default async function WorkoutsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
   if (!profile) return <SeedProfileButton />;
 
