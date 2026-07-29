@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { setLocationChoice } from "./actions";
+import { setLocationChoice } from "@/app/(app)/workouts/actions";
 
 export function LocationToggle({
   plannedWorkoutId,

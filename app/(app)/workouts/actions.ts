@@ -17,4 +17,6 @@ export async function setLocationChoice(plannedWorkoutId: string, location: "gym
     .eq("user_id", user.id);
 
   revalidatePath("/workouts");
+  // "layout" so every /plan/[date] preview picks up the new choice too.
+  revalidatePath("/plan", "layout");
 }

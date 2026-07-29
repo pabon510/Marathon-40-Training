@@ -48,8 +48,9 @@ export default async function PlanPage() {
           const workout = workouts.find((w) => w.local_date === date);
           const dayChanges = changesByDate.get(date) ?? [];
           const isToday = date === today;
-          return (
-            <div key={date} className={`card ${isToday ? "ring-2 ring-brand-500" : ""}`}>
+
+          const body = (
+            <>
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-900">
                   {new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
@@ -71,6 +72,9 @@ export default async function PlanPage() {
                     {workout.planned_duration_minutes} min
                   </p>
                   <p className="text-xs text-slate-500">{workout.goal}</p>
+                  <p className="mt-1 text-xs text-brand-700 underline">
+                    {isToday ? "View full workout" : "Preview this workout"}
+                  </p>
                 </>
               ) : (
                 <p className="mt-1 text-sm text-slate-400">No workout scheduled.</p>
@@ -84,6 +88,20 @@ export default async function PlanPage() {
                   ))}
                 </ul>
               ) : null}
+            </>
+          );
+
+          return workout ? (
+            <Link
+              key={date}
+              href={`/plan/${date}`}
+              className={`card block hover:bg-slate-50 ${isToday ? "ring-2 ring-brand-500" : ""}`}
+            >
+              {body}
+            </Link>
+          ) : (
+            <div key={date} className={`card ${isToday ? "ring-2 ring-brand-500" : ""}`}>
+              {body}
             </div>
           );
         })}
