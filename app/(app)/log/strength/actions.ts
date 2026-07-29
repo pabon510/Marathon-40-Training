@@ -74,19 +74,48 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
       overrideFlag: false,
     });
 
-    const entries = exerciseIds.map((exerciseId, i) => ({
-      exerciseId,
-      ordinal: i + 1,
-      prescribedVariantId: String(formData.get(`variantId_${i}`) ?? "") || null,
-      completedSets: Number(formData.get(`sets_${i}`) ?? 0) || null,
-      representativeReps: Number(formData.get(`reps_${i}`) ?? 0) || null,
-      maxReps: null,
-      loadValue: Number(formData.get(`load_${i}`) ?? 0) || null,
-      loadUnit: (String(formData.get(`loadUnit_${i}`) ?? "lb") as "lb" | "kg" | "bodyweight" | "band" | "n/a") || null,
-      difficulty: Number(formData.get(`difficulty_${i}`) ?? 0) || null,
-      substitutionExerciseId: null,
-      notes: null,
-    }));
+    const entries = exerciseIds.map((exerciseId, i) => {
+      const loadType = String(formData.get(`loadType_${i}`) ?? "weighted") as
+        | "weighted"
+        | "bodyweight"
+        | "band"
+        | "machine";
+      const rawLoad = String(formData.get(`load_${i}`) ?? "").trim();
+      const rawReps = String(formData.get(`reps_${i}`) ?? "").trim();
+      const rawSets = String(formData.get(`sets_${i}`) ?? "").trim();
+      const rawDifficulty = String(formData.get(`difficulty_${i}`) ?? "").trim();
+      const rawBand = String(formData.get(`bandLevel_${i}`) ?? "").trim();
+      const rawPerSet = String(formData.get(`perSetReps_${i}`) ?? "").trim();
+
+      // A blank field stays NULL rather than becoming 0 — the user
+      // explicitly confirmed leaving it blank in the UI.
+      const skippedFields: string[] = [];
+      if ((loadType === "weighted" || loadType === "machine") && rawLoad === "") skippedFields.push("load");
+      if (rawReps === "") skippedFields.push("reps");
+      if (rawDifficulty === "") skippedFields.push("difficulty");
+
+      const loadUnit =
+        loadType === "bodyweight" ? "bodyweight" : loadType === "band" ? "band" : "lb";
+
+      return {
+        exerciseId,
+        ordinal: i + 1,
+        prescribedVariantId: String(formData.get(`variantId_${i}`) ?? "") || null,
+        completedSets: rawSets === "" ? null : Number(rawSets),
+        representativeReps: rawReps === "" ? null : Number(rawReps),
+        maxReps: null,
+        loadValue: rawLoad === "" ? null : Number(rawLoad),
+        loadUnit: loadUnit as "lb" | "kg" | "bodyweight" | "band" | "n/a",
+        difficulty: rawDifficulty === "" ? null : Number(rawDifficulty),
+        substitutionExerciseId: null,
+        notes: null,
+        loadType,
+        bandLevel: rawBand === "" ? null : (rawBand as "light" | "medium" | "heavy"),
+        repBasis: (String(formData.get(`repBasis_${i}`) ?? "total") as "total" | "per_side") || "total",
+        skippedFields,
+        perSetReps: rawPerSet === "" ? [] : rawPerSet.split(",").map((s) => s.trim()),
+      };
+    });
 
     if (entries.length > 0) {
       await saveStrengthLogEntries(supabase, sessionId, entries);

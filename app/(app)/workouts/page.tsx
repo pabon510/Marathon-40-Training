@@ -7,6 +7,8 @@ import { todayLocalDate } from "@/lib/date";
 import { WORKOUT_KIND_LABELS } from "@/lib/labels";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import { SeedProfileButton } from "@/components/seed-profile-button";
+import { LoadGuidance } from "@/components/load-guidance";
+import { attachLoadGuidance } from "@/lib/services/strengthGuidanceService";
 import { LocationToggle } from "./location-toggle";
 import { GuidedMode } from "./guided-mode";
 
@@ -44,6 +46,7 @@ export default async function WorkoutsPage() {
   if (workout.strength_template_id) {
     const wantShort = workout.planned_duration_minutes < 40;
     const { template, items } = await resolveStrengthWorkout(supabase, workout.strength_template_id, location, wantShort);
+    const guidedItems = await attachLoadGuidance(supabase, user!.id, profile, items, location);
     strengthSection = (
       <div className="space-y-3">
         <div className="card">
@@ -56,20 +59,36 @@ export default async function WorkoutsPage() {
 
         <div className="card">
           <p className="mb-2 text-sm font-semibold text-slate-900">Full workout overview</p>
-          <ol className="space-y-2">
-            {items.map((item) => (
+          <ol className="space-y-3">
+            {guidedItems.map((item) => (
               <li key={item.ordinal} className="rounded-lg border border-slate-100 p-2">
-                <p className="text-sm font-medium text-slate-800">{item.exercise.name}</p>
+                <p className="text-sm font-medium text-slate-800">
+                  {item.exercise.name}
+                  {item.exercise.rep_basis === "per_side" ? (
+                    <span className="ml-1 text-xs font-normal text-brand-700">(per side)</span>
+                  ) : null}
+                </p>
                 <p className="text-xs text-slate-500">
                   {item.setCount} x {item.repRangeLow}-{item.repRangeHigh} · rest {item.restSeconds}s
                   {item.isOptional ? " · optional" : ""}
                 </p>
+                <div className="mt-2">
+                  <LoadGuidance
+                    recommendation={item.recommendation}
+                    loading={{
+                      loadingInstructions: item.exercise.loading_instructions,
+                      loadPosition: item.exercise.load_position,
+                      startLoadNote: item.exercise.start_load_note,
+                      repBasis: item.exercise.rep_basis,
+                    }}
+                  />
+                </div>
               </li>
             ))}
           </ol>
         </div>
 
-        <GuidedMode items={items} />
+        <GuidedMode items={guidedItems} />
       </div>
     );
   }

@@ -35,6 +35,11 @@ and `AGENTS.md` for build precedence/rules.
    5. `supabase/migrations/0005_checkins_and_sessions.sql`
    6. `supabase/migrations/0006_safety_and_rules.sql`
    7. `supabase/migrations/0007_derived_views.sql`
+   8. `supabase/migrations/0008_loading_and_logging_detail.sql`
+
+   Migrations after `0007` are **add-only** — they add columns, tables and
+   indexes but never drop, rewrite, or delete existing rows, so they are
+   safe to apply to a database that already has logged workouts.
 
    Open each file directly on GitHub (in this repo, under
    `supabase/migrations/`) and copy its contents into the SQL Editor.

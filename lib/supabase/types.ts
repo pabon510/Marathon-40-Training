@@ -194,8 +194,21 @@ export interface StrengthLogRow {
   difficulty: number | null;
   substitution_exercise_id: string | null;
   notes: string | null;
+  load_type: "weighted" | "bodyweight" | "band" | "machine" | null;
+  band_level: "light" | "medium" | "heavy" | null;
+  rep_basis: "total" | "per_side" | null;
+  skipped_fields: string[];
   created_at: string;
   updated_at: string;
+}
+
+export interface StrengthSetLogRow {
+  id: string;
+  strength_log_id: string;
+  set_number: number;
+  reps: number | null;
+  load_value: number | null;
+  created_at: string;
 }
 
 export interface PostWorkoutCheckInRow {
@@ -226,6 +239,13 @@ export interface ExerciseDefinitionRow {
   stop_substitute_guidance: string;
   is_lower_body: boolean;
   active: boolean;
+  load_basis: "machine_total" | "per_dumbbell" | "per_hand" | "single_implement" | "bodyweight" | "band";
+  default_load_type: "weighted" | "bodyweight" | "band" | "machine";
+  rep_basis: "total" | "per_side";
+  loading_instructions: string;
+  load_position: string;
+  start_load_note: string;
+  load_increment_lb: number;
   created_at: string;
   updated_at: string;
 }
@@ -323,6 +343,7 @@ export interface Database {
       run_logs: TableDef<RunLogRow, Insertable<RunLogRow, "workout_session_id" | "run_type">>;
       run_splits: TableDef<RunSplitRow, Insertable<RunSplitRow, "run_log_id" | "ordinal" | "duration_seconds">>;
       strength_logs: TableDef<StrengthLogRow, Insertable<StrengthLogRow, "workout_session_id" | "exercise_id" | "ordinal">>;
+      strength_set_logs: TableDef<StrengthSetLogRow, Insertable<StrengthSetLogRow, "strength_log_id" | "set_number">>;
       post_workout_check_ins: TableDef<
         PostWorkoutCheckInRow,
         Insertable<

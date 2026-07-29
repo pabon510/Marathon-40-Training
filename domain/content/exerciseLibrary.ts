@@ -7,6 +7,20 @@
  * completeness without touching Supabase.
  */
 
+/** How the number entered in the "load" field should be interpreted. */
+export type LoadBasis =
+  | "machine_total"
+  | "per_dumbbell"
+  | "per_hand"
+  | "single_implement"
+  | "bodyweight"
+  | "band";
+
+export type LoadType = "weighted" | "bodyweight" | "band" | "machine";
+
+/** Whether a prescribed rep count means total reps or reps on each side. */
+export type RepBasis = "total" | "per_side";
+
 export interface ExerciseContent {
   slug: string;
   name: string;
@@ -19,6 +33,20 @@ export interface ExerciseContent {
   mistakes: string[];
   stopSubstituteGuidance: string;
   isLowerBody: boolean;
+  /** How to read the load number (machine total vs per dumbbell vs per hand...). */
+  loadBasis: LoadBasis;
+  /** Which load type the logging form should preselect. */
+  defaultLoadType: LoadType;
+  /** Whether prescribed reps are total or per side. */
+  repBasis: RepBasis;
+  /** One explicit sentence telling the user exactly what number to enter. */
+  loadingInstructions: string;
+  /** Where the weight is physically held/placed. */
+  loadPosition: string;
+  /** Optional note about how to start (e.g. bodyweight before adding load). */
+  startLoadNote: string;
+  /** Smallest practical load increase for this exercise, in pounds. */
+  loadIncrementLb: number;
   variants: {
     location: "gym" | "home" | "either";
     equivalenceGroup: string;
@@ -44,6 +72,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Letting knees cave inward.", "Bouncing at the bottom.", "Locking knees out hard at the top."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "machine_total",
+    defaultLoadType: "machine",
+    repBasis: "total",
+    loadingInstructions: "Enter the TOTAL weight shown on the machine (the full stack or all plates loaded), not the weight per side.",
+    loadPosition: "Feet on the platform, back against the pad",
+    startLoadNote: "",
+    loadIncrementLb: 10,
     variants: [
       { location: "gym", equivalenceGroup: "squat", equipmentRequirements: ["leg press machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee"], isShortOption: false },
     ],
@@ -60,6 +95,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Knees caving inward.", "Heels lifting off the floor.", "Rounding the low back at the bottom."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "single_implement",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight of the ONE dumbbell or kettlebell you are holding.",
+    loadPosition: "Held vertically against the chest with both hands",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "home", equivalenceGroup: "squat", equipmentRequirements: ["dumbbell", "kettlebell"], progressionMethods: ["reps", "load", "tempo"], contraindicationTags: ["knee"], isShortOption: false },
     ],
@@ -76,6 +118,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Dropping hard onto the bench.", "Letting knees cave in.", "Using momentum instead of control."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight by default. If you add load, enter the weight of the ONE dumbbell held at your chest.",
+    loadPosition: "Bodyweight, or one dumbbell at the chest",
+    startLoadNote: "Start with bodyweight until the depth and knee comfort feel easy.",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "squat", equipmentRequirements: ["bench"], progressionMethods: ["reps", "tempo"], contraindicationTags: ["knee"], isShortOption: true },
     ],
@@ -92,6 +141,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Rounding the low back.", "Bending the knees like a squat instead of hinging.", "Letting the weight drift away from the legs."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "per_dumbbell",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight of ONE dumbbell — you are holding one in each hand, so 25 means a 25 lb dumbbell per hand.",
+    loadPosition: "One dumbbell in each hand, in front of the thighs",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "hinge", equipmentRequirements: ["dumbbells"], progressionMethods: ["reps", "load", "tempo"], contraindicationTags: ["knee", "low_back"], isShortOption: false },
     ],
@@ -108,6 +164,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Forcing extra range to match a full RDL.", "Rounding the back to reach further."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "per_dumbbell",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight of ONE dumbbell — you are holding one in each hand.",
+    loadPosition: "One dumbbell in each hand, in front of the thighs",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "hinge", equipmentRequirements: ["dumbbells"], progressionMethods: ["reps", "range"], contraindicationTags: ["knee", "low_back"], isShortOption: true },
     ],
@@ -124,6 +187,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Pushing off the bottom leg instead of the top leg.", "Using a step too high for comfortable knee tracking.", "Rushing the lowering phase."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "per_hand",
+    defaultLoadType: "bodyweight",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER LEG. If you add dumbbells, enter the weight of ONE dumbbell (the weight per hand).",
+    loadPosition: "One dumbbell in each hand at your sides, or bodyweight",
+    startLoadNote: "Begin with bodyweight. Add dumbbells only once your control and knee comfort are good.",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "single_leg", equipmentRequirements: ["bench or box"], progressionMethods: ["reps", "load", "unilateral"], contraindicationTags: ["knee"], isShortOption: false },
     ],
@@ -140,6 +210,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Letting the front knee drift past the toes aggressively.", "Going deeper than feels controlled.", "Rushing the tempo."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "per_hand",
+    defaultLoadType: "bodyweight",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER LEG. Bodyweight by default; if you add dumbbells, enter the weight per hand.",
+    loadPosition: "Bodyweight with light hand support, or one dumbbell in each hand",
+    startLoadNote: "Begin with bodyweight and light hand support for balance.",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "single_leg", equipmentRequirements: ["chair or wall"], progressionMethods: ["reps", "range", "tempo"], contraindicationTags: ["knee"], isShortOption: true },
     ],
@@ -156,6 +233,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Arching the low back instead of squeezing the glutes.", "Pushing through the toes instead of the heels.", "Rushing the rep."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "single_implement",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight by default. If you add load, enter the weight of the ONE dumbbell resting across your hips.",
+    loadPosition: "One dumbbell across the front of the hips",
+    startLoadNote: "Begin with bodyweight until you can squeeze hard at the top for all reps.",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "glutes", equipmentRequirements: [], progressionMethods: ["reps", "load", "tempo"], contraindicationTags: ["knee"], isShortOption: false },
     ],
@@ -172,6 +256,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Arching through the low back.", "Feet too close or too far from the hips."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight — no load to enter.",
+    loadPosition: "Bodyweight",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "glutes", equipmentRequirements: [], progressionMethods: ["reps", "tempo"], contraindicationTags: ["knee"], isShortOption: true },
     ],
@@ -188,6 +279,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Using momentum to kick the weight.", "Hips lifting off the pad.", "Cutting the range short."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "machine_total",
+    defaultLoadType: "machine",
+    repBasis: "total",
+    loadingInstructions: "Enter the TOTAL weight shown on the machine stack.",
+    loadPosition: "Machine pad just above the heels",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "gym", equivalenceGroup: "hamstrings", equipmentRequirements: ["leg curl machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee"], isShortOption: false },
     ],
@@ -204,6 +302,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Letting hips sag toward the floor.", "Moving too fast to control the slide."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight, or select a band level if you are using a band.",
+    loadPosition: "Bodyweight, or a band around the ankles",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "home", equivalenceGroup: "hamstrings", equipmentRequirements: ["slider or towel", "band"], progressionMethods: ["reps", "tempo", "range"], contraindicationTags: ["knee"], isShortOption: false },
     ],
@@ -220,6 +325,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Letting hips drift down mid-hold.", "Holding your breath."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight hold — no load to enter. Record the hold time in seconds in the reps field if you find that useful.",
+    loadPosition: "Bodyweight",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "hamstrings", equipmentRequirements: [], progressionMethods: ["tempo"], contraindicationTags: ["knee"], isShortOption: true },
     ],
@@ -236,6 +348,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Leaning the torso to help swing the leg.", "Using momentum instead of a controlled contraction."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "machine_total",
+    defaultLoadType: "machine",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER LEG. Enter the TOTAL weight shown on the cable stack or machine.",
+    loadPosition: "Ankle cuff on the working leg, or machine pads outside the knees",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "gym", equivalenceGroup: "hip_abductors", equipmentRequirements: ["cable machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee", "hip"], isShortOption: false },
     ],
@@ -252,6 +371,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Standing up tall between steps.", "Letting the knees cave inward.", "Taking steps too large to control."],
     stopSubstituteGuidance: STOP_LOWER_BODY,
     isLowerBody: true,
+    loadBasis: "band",
+    defaultLoadType: "band",
+    repBasis: "total",
+    loadingInstructions: "Select a band level rather than entering a weight.",
+    loadPosition: "Band above the knees or around the ankles",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "home", equivalenceGroup: "hip_abductors", equipmentRequirements: ["mini band"], progressionMethods: ["reps", "range"], contraindicationTags: ["knee", "hip"], isShortOption: false },
     ],
@@ -268,6 +394,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Rolling backward.", "Separating feet.", "Rushing."],
     stopSubstituteGuidance: "Stop if knee or hip pain increases; use an unbanded smaller range or another pain-neutral abductor movement.",
     isLowerBody: true,
+    loadBasis: "band",
+    defaultLoadType: "bodyweight",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER SIDE. Bodyweight by default, or select a band level if you are using a band.",
+    loadPosition: "Band above the knees (optional)",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "hip_abductors", equipmentRequirements: ["mini band (optional)"], progressionMethods: ["reps", "range"], contraindicationTags: ["knee", "hip"], isShortOption: true },
     ],
@@ -284,6 +417,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Flaring elbows out to 90 degrees.", "Bouncing dumbbells off the chest.", "Arching the low back excessively."],
     stopSubstituteGuidance: "Stop or substitute if shoulder pain increases; reduce range or switch to floor press.",
     isLowerBody: false,
+    loadBasis: "per_dumbbell",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight of ONE dumbbell — you are holding one in each hand.",
+    loadPosition: "One dumbbell in each hand at chest level",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "horizontal_push", equipmentRequirements: ["dumbbells", "bench"], progressionMethods: ["reps", "load"], contraindicationTags: ["shoulder"], isShortOption: false },
     ],
@@ -300,6 +440,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Hips sagging or piking up.", "Only moving through a partial range.", "Flaring elbows straight out to the sides."],
     stopSubstituteGuidance: "Stop or substitute if shoulder or wrist pain increases; raise the surface height to reduce difficulty.",
     isLowerBody: false,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight — no load to enter. Raise the surface to make it easier, lower it to make it harder.",
+    loadPosition: "Bodyweight, hands on the elevated surface",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "horizontal_push", equipmentRequirements: ["bench"], progressionMethods: ["reps", "range", "tempo"], contraindicationTags: ["shoulder"], isShortOption: true },
     ],
@@ -316,6 +463,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Leaning back excessively to pull.", "Rounding the shoulders forward on the return.", "Using momentum instead of the back muscles."],
     stopSubstituteGuidance: "Stop or substitute if shoulder or low-back pain increases.",
     isLowerBody: false,
+    loadBasis: "machine_total",
+    defaultLoadType: "machine",
+    repBasis: "total",
+    loadingInstructions: "Enter the TOTAL weight shown on the cable stack.",
+    loadPosition: "Both hands on the handle",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "gym", equivalenceGroup: "horizontal_pull", equipmentRequirements: ["cable row machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["shoulder", "low_back"], isShortOption: false },
     ],
@@ -332,6 +486,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Rotating the torso to help pull.", "Rounding the back.", "Using momentum/jerking the weight up."],
     stopSubstituteGuidance: "Stop or substitute if shoulder or low-back pain increases.",
     isLowerBody: false,
+    loadBasis: "single_implement",
+    defaultLoadType: "weighted",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER SIDE. Enter the weight of the ONE dumbbell you are rowing.",
+    loadPosition: "One dumbbell in the free hand",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "home", equivalenceGroup: "horizontal_pull", equipmentRequirements: ["dumbbell", "bench"], progressionMethods: ["reps", "load"], contraindicationTags: ["shoulder", "low_back"], isShortOption: false },
     ],
@@ -348,6 +509,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Lifting the chest off the bench to cheat the range.", "Shrugging instead of rowing."],
     stopSubstituteGuidance: "Stop or substitute if shoulder pain increases.",
     isLowerBody: false,
+    loadBasis: "per_dumbbell",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight of ONE dumbbell — you are holding one in each hand.",
+    loadPosition: "One dumbbell in each hand, chest supported on the bench",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "horizontal_pull", equipmentRequirements: ["bench"], progressionMethods: ["reps", "load", "tempo"], contraindicationTags: ["shoulder"], isShortOption: true },
     ],
@@ -364,6 +532,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Excessive low-back arch.", "Flaring elbows too far forward or back.", "Using leg drive to cheat the press (unless intentionally standing/push-press)."],
     stopSubstituteGuidance: "Stop or substitute if shoulder pain increases.",
     isLowerBody: false,
+    loadBasis: "per_dumbbell",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight of ONE dumbbell — you are holding one in each hand.",
+    loadPosition: "One dumbbell in each hand at shoulder height",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "vertical_push", equipmentRequirements: ["dumbbells"], progressionMethods: ["reps", "load"], contraindicationTags: ["shoulder"], isShortOption: false },
     ],
@@ -380,6 +555,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Leaning to the side to press.", "Losing the half-kneeling position.", "Overarching the low back."],
     stopSubstituteGuidance: "Stop or substitute if shoulder pain increases; use lighter load or seated version.",
     isLowerBody: false,
+    loadBasis: "single_implement",
+    defaultLoadType: "weighted",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER SIDE. Enter the weight of the ONE dumbbell you are pressing.",
+    loadPosition: "One dumbbell at shoulder height on the working side",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "vertical_push", equipmentRequirements: ["dumbbell"], progressionMethods: ["reps", "unilateral"], contraindicationTags: ["shoulder"], isShortOption: true },
     ],
@@ -396,6 +578,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Leaning back excessively to pull.", "Pulling behind the neck.", "Using momentum instead of the back muscles."],
     stopSubstituteGuidance: "Stop or substitute if shoulder pain increases.",
     isLowerBody: false,
+    loadBasis: "machine_total",
+    defaultLoadType: "machine",
+    repBasis: "total",
+    loadingInstructions: "Enter the TOTAL weight shown on the machine stack.",
+    loadPosition: "Both hands on the bar, thighs under the pad",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "gym", equivalenceGroup: "vertical_pull", equipmentRequirements: ["lat pulldown machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["shoulder"], isShortOption: false },
     ],
@@ -412,6 +601,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Using an unstable or unsafe anchor point.", "Leaning back to help pull.", "Letting the band snap back uncontrolled."],
     stopSubstituteGuidance: "Stop or substitute if shoulder pain increases, or if no safely anchored point is available — use the one-arm row substitute instead.",
     isLowerBody: false,
+    loadBasis: "band",
+    defaultLoadType: "band",
+    repBasis: "total",
+    loadingInstructions: "Select a band level rather than entering a weight.",
+    loadPosition: "Both hands on the band, anchored overhead",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "home", equivalenceGroup: "vertical_pull", equipmentRequirements: ["resistance band", "secure anchor"], progressionMethods: ["reps"], contraindicationTags: ["shoulder"], isShortOption: false },
     ],
@@ -428,6 +624,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Rotating the torso to help pull.", "Rounding the back."],
     stopSubstituteGuidance: "Stop or substitute if shoulder or low-back pain increases.",
     isLowerBody: false,
+    loadBasis: "single_implement",
+    defaultLoadType: "weighted",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER SIDE. Enter the weight of the ONE dumbbell you are rowing.",
+    loadPosition: "One dumbbell in the free hand",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "vertical_pull", equipmentRequirements: ["dumbbell", "bench"], progressionMethods: ["reps", "load"], contraindicationTags: ["shoulder"], isShortOption: true },
     ],
@@ -444,6 +647,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Letting the low back arch off the floor.", "Moving too fast to control.", "Holding your breath."],
     stopSubstituteGuidance: "Stop or substitute if this increases knee, hip, or low-back discomfort.",
     isLowerBody: false,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight — no load to enter. One rep is one arm-and-opposite-leg extension.",
+    loadPosition: "Bodyweight",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "core_anti_extension", equipmentRequirements: [], progressionMethods: ["reps", "tempo", "range"], contraindicationTags: ["low_back"], isShortOption: false },
     ],
@@ -460,6 +670,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Forcing full range to match the standard version.", "Letting the hips sag in the plank."],
     stopSubstituteGuidance: "Stop or substitute if this increases knee, hip, or low-back discomfort.",
     isLowerBody: false,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight — no load to enter.",
+    loadPosition: "Bodyweight, forearms elevated if planking",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "core_anti_extension", equipmentRequirements: [], progressionMethods: ["reps", "range"], contraindicationTags: ["low_back"], isShortOption: true },
     ],
@@ -476,6 +693,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Hips sagging toward the floor.", "Hips piked too high.", "Holding your breath."],
     stopSubstituteGuidance: "Stop or substitute if this increases low-back or shoulder discomfort.",
     isLowerBody: false,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "Bodyweight hold — no load to enter. Record the hold time in seconds in the reps field.",
+    loadPosition: "Bodyweight, forearms on the floor",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "core_plank", equipmentRequirements: [], progressionMethods: ["tempo"], contraindicationTags: ["low_back", "shoulder"], isShortOption: false },
     ],
@@ -492,6 +716,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Letting the torso rotate toward the anchor.", "Using an unstable anchor point.", "Pressing too fast to control."],
     stopSubstituteGuidance: "Stop or substitute if this increases low-back discomfort.",
     isLowerBody: false,
+    loadBasis: "band",
+    defaultLoadType: "band",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER SIDE. Select a band level rather than entering a weight.",
+    loadPosition: "Both hands at the chest, band anchored to your side",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "core_anti_rotation", equipmentRequirements: ["resistance band", "anchor"], progressionMethods: ["reps", "tempo"], contraindicationTags: ["low_back"], isShortOption: false },
     ],
@@ -508,6 +739,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Sitting back onto the heels.", "Letting the torso rotate."],
     stopSubstituteGuidance: "Stop or substitute if kneeling increases knee discomfort; switch to standing Pallof press instead.",
     isLowerBody: false,
+    loadBasis: "band",
+    defaultLoadType: "band",
+    repBasis: "per_side",
+    loadingInstructions: "Reps are PER SIDE. Select a band level rather than entering a weight.",
+    loadPosition: "Both hands at the chest, band anchored to your side",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "core_anti_rotation", equipmentRequirements: ["resistance band", "anchor"], progressionMethods: ["reps"], contraindicationTags: ["low_back", "knee"], isShortOption: true },
     ],
@@ -524,6 +762,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Leaning the torso to counterbalance the weight.", "Shrugging the shoulders up toward the ears.", "Rushing the walk."],
     stopSubstituteGuidance: "Stop or substitute if grip, shoulder, or knee discomfort increases.",
     isLowerBody: true,
+    loadBasis: "per_hand",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight PER HAND. Farmer's carry uses one in each hand; suitcase carry uses one hand only.",
+    loadPosition: "One dumbbell or kettlebell per hand, hanging at your sides",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "carry", equipmentRequirements: ["dumbbells or kettlebell"], progressionMethods: ["load", "unilateral"], contraindicationTags: ["knee", "shoulder"], isShortOption: false },
     ],
@@ -540,6 +785,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Holding your breath.", "Dropping the weight instead of setting it down."],
     stopSubstituteGuidance: "Stop or substitute if grip, shoulder, or knee discomfort increases.",
     isLowerBody: true,
+    loadBasis: "per_hand",
+    defaultLoadType: "weighted",
+    repBasis: "total",
+    loadingInstructions: "Enter the weight PER HAND.",
+    loadPosition: "One dumbbell per hand, hanging at your sides",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "carry", equipmentRequirements: ["dumbbells"], progressionMethods: ["load"], contraindicationTags: ["knee", "shoulder"], isShortOption: true },
     ],
@@ -556,6 +808,13 @@ export const EXERCISES: ExerciseContent[] = [
     mistakes: ["Forcing range to a point of discomfort.", "Rushing through the movements."],
     stopSubstituteGuidance: "Stop or ease off any movement that increases knee or other discomfort. This is deliberately non-loaded and safe as a lower-body alternative.",
     isLowerBody: false,
+    loadBasis: "bodyweight",
+    defaultLoadType: "bodyweight",
+    repBasis: "total",
+    loadingInstructions: "No load — move gently through comfortable ranges.",
+    loadPosition: "Bodyweight",
+    startLoadNote: "",
+    loadIncrementLb: 5,
     variants: [
       { location: "either", equivalenceGroup: "gentle_mobility", equipmentRequirements: [], progressionMethods: [], contraindicationTags: [], isShortOption: true },
     ],

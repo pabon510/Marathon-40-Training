@@ -5,6 +5,7 @@ import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { resolveStrengthWorkout } from "@/lib/services/workoutContentService";
 import { todayLocalDate } from "@/lib/date";
 import { SeedProfileButton } from "@/components/seed-profile-button";
+import { attachLoadGuidance, type GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { StrengthLogForm } from "./strength-form";
 
 export default async function LogStrengthPage() {
@@ -18,12 +19,12 @@ export default async function LogStrengthPage() {
   const localDate = todayLocalDate(profile.timezone);
   const workout = await getPlannedWorkoutForDate(supabase, user!.id, localDate);
 
-  let items: Awaited<ReturnType<typeof resolveStrengthWorkout>>["items"] = [];
+  let items: GuidedExerciseItem[] = [];
   const location = workout?.location_choice === "gym" ? "gym" : "home";
   if (workout?.strength_template_id) {
     const wantShort = workout.planned_duration_minutes < 40;
     const resolved = await resolveStrengthWorkout(supabase, workout.strength_template_id, location, wantShort);
-    items = resolved.items;
+    items = await attachLoadGuidance(supabase, user!.id, profile, resolved.items, location);
   }
 
   return (
