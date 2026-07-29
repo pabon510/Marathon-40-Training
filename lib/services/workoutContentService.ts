@@ -45,9 +45,13 @@ export async function resolveStrengthWorkout(
     variants.push({
       id: row.id,
       exerciseId: row.exercise_id,
+      exerciseSlug: row.exercise_definitions.slug,
       location: row.location,
       equivalenceGroup: row.equivalence_group,
       isShortOption: row.is_short_option,
+      selectionPriority: row.selection_priority,
+      activeForNewPlans: row.exercise_definitions.active_for_new_plans,
+      safetyEligible: true,
     });
     exerciseById.set(row.exercise_id, row.exercise_definitions);
   }

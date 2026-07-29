@@ -153,6 +153,14 @@ export interface StrengthLogEntryInput {
   skippedFields?: string[];
   /** Only populated when the user opted into "sets differed" per-set entry. */
   perSetReps?: string[];
+  completedSeconds?: number | null;
+  completedDistanceFeet?: number | null;
+  completedSteps?: number | null;
+  tempoUsed?: string | null;
+  assistanceNote?: string | null;
+  painIncreased?: boolean | null;
+  formFailed?: boolean | null;
+  recoveryAcceptable?: boolean | null;
 }
 
 export async function saveStrengthLogEntries(
@@ -180,6 +188,14 @@ export async function saveStrengthLogEntries(
         band_level: e.bandLevel ?? null,
         rep_basis: e.repBasis ?? null,
         skipped_fields: e.skippedFields ?? [],
+        completed_seconds: e.completedSeconds ?? null,
+        completed_distance_feet: e.completedDistanceFeet ?? null,
+        completed_steps: e.completedSteps ?? null,
+        tempo_used: e.tempoUsed ?? null,
+        assistance_note: e.assistanceNote ?? null,
+        pain_increased: e.painIncreased ?? null,
+        form_failed: e.formFailed ?? null,
+        recovery_acceptable: e.recoveryAcceptable ?? null,
       })),
     )
     .select("id, ordinal");

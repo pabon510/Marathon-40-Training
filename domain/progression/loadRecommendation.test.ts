@@ -29,6 +29,9 @@ function exposure(overrides: Partial<ExerciseExposure> = {}): ExerciseExposure {
     representativeReps: 10,
     difficulty: 6,
     repBasis: "total",
+    painIncreased: false,
+    formFailed: false,
+    recoveryAcceptable: true,
     ...overrides,
   };
 }
@@ -267,6 +270,16 @@ describe("progression behaviour is unchanged", () => {
 
   it("treats a missing difficulty as too uncertain to progress on", () => {
     const unknown = exposure({ representativeReps: 12, difficulty: null });
+    expect(buildLoadRecommendation([unknown, unknown], PRESCRIPTION, context("leg_press")).kind).toBe("repeat");
+  });
+
+  it("does not progress when pain, form, or recovery evidence is unknown", () => {
+    const unknown = exposure({
+      representativeReps: 12,
+      painIncreased: null,
+      formFailed: null,
+      recoveryAcceptable: null,
+    });
     expect(buildLoadRecommendation([unknown, unknown], PRESCRIPTION, context("leg_press")).kind).toBe("repeat");
   });
 });

@@ -198,6 +198,14 @@ export interface StrengthLogRow {
   band_level: "light" | "medium" | "heavy" | null;
   rep_basis: "total" | "per_side" | null;
   skipped_fields: string[];
+  completed_seconds: number | null;
+  completed_distance_feet: number | null;
+  completed_steps: number | null;
+  tempo_used: string | null;
+  assistance_note: string | null;
+  pain_increased: boolean | null;
+  form_failed: boolean | null;
+  recovery_acceptable: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -246,6 +254,17 @@ export interface ExerciseDefinitionRow {
   load_position: string;
   start_load_note: string;
   load_increment_lb: number;
+  family_slug: string | null;
+  programming_role: "primary" | "secondary" | "accessory" | "regression" | "progression" | "safety_alternative" | "warmup" | null;
+  prescription_metric: "reps" | "seconds" | "distance_feet" | "steps" | "breaths";
+  side_mode: "bilateral" | "alternating" | "per_side";
+  default_tempo: string | null;
+  default_duration_seconds: number | null;
+  default_distance_feet: number | null;
+  history_compatibility: "exact_only" | "same_family";
+  safety_alternative_eligible: boolean;
+  active_for_new_plans: boolean;
+  legacy_display_only: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -259,6 +278,46 @@ export interface ExerciseVariantRow {
   contraindication_tags: string[];
   equivalence_group: string;
   is_short_option: boolean;
+  selection_priority: number;
+  programming_role: "primary" | "secondary" | "accessory" | "regression" | "progression" | "safety_alternative" | "warmup" | null;
+  rotation_eligible: boolean;
+  created_at: string;
+}
+
+export interface ExerciseHistoryCompatibilityRow {
+  source_exercise_id: string;
+  target_exercise_id: string;
+  compatibility_scope: "display_only" | "progression_same_loading";
+  notes: string;
+  created_at: string;
+}
+
+export interface StrengthBlockSelectionRow {
+  id: string;
+  user_id: string;
+  block_start_date: string;
+  block_end_date: string;
+  template_slug: string;
+  slot_key: string;
+  exercise_variant_id: string;
+  reason_code: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlannedStrengthItemRow {
+  id: string;
+  planned_workout_id: string;
+  ordinal: number;
+  template_item_id: string | null;
+  exercise_variant_id: string;
+  exercise_id: string;
+  set_count: number;
+  rep_range_low: number;
+  rep_range_high: number;
+  rest_seconds: number;
+  prescription_metric: "reps" | "seconds" | "distance_feet" | "steps" | "breaths";
+  selection_reason_code: string;
   created_at: string;
 }
 
@@ -356,6 +415,24 @@ export interface Database {
         Insertable<ExerciseDefinitionRow, "slug" | "name" | "movement_pattern" | "setup" | "execution" | "stop_substitute_guidance">
       >;
       exercise_variants: TableDef<ExerciseVariantRow, Insertable<ExerciseVariantRow, "exercise_id" | "location" | "equivalence_group">>;
+      exercise_history_compatibility: TableDef<
+        ExerciseHistoryCompatibilityRow,
+        Insertable<ExerciseHistoryCompatibilityRow, "source_exercise_id" | "target_exercise_id" | "compatibility_scope" | "notes">
+      >;
+      strength_block_selections: TableDef<
+        StrengthBlockSelectionRow,
+        Insertable<
+          StrengthBlockSelectionRow,
+          "user_id" | "block_start_date" | "block_end_date" | "template_slug" | "slot_key" | "exercise_variant_id" | "reason_code"
+        >
+      >;
+      planned_strength_items: TableDef<
+        PlannedStrengthItemRow,
+        Insertable<
+          PlannedStrengthItemRow,
+          "planned_workout_id" | "ordinal" | "exercise_variant_id" | "exercise_id" | "set_count" | "rep_range_low" | "rep_range_high" | "selection_reason_code"
+        >
+      >;
       strength_templates: TableDef<StrengthTemplateRow, Insertable<StrengthTemplateRow, "slug" | "name" | "goal" | "emphasis" | "duration_minutes">>;
       strength_template_items: TableDef<
         StrengthTemplateItemRow,

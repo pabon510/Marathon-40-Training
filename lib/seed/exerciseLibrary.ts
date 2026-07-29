@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
-import { EXERCISES, TEMPLATES } from "@/domain/content/exerciseLibrary";
+import { EXERCISES, TEMPLATES, getExerciseMetadataV2 } from "@/domain/content/exerciseLibrary";
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -14,6 +14,7 @@ export async function seedExerciseLibrary(admin: AdminClient) {
   const exerciseIdBySlug = new Map<string, string>();
 
   for (const exercise of EXERCISES) {
+    const metadataV2 = getExerciseMetadataV2(exercise);
     const { data, error } = await admin
       .from("exercise_definitions")
       .upsert(
@@ -37,6 +38,17 @@ export async function seedExerciseLibrary(admin: AdminClient) {
           load_position: exercise.loadPosition,
           start_load_note: exercise.startLoadNote,
           load_increment_lb: exercise.loadIncrementLb,
+          family_slug: metadataV2.familySlug,
+          programming_role: metadataV2.programmingRole,
+          prescription_metric: metadataV2.prescriptionMetric,
+          side_mode: metadataV2.sideMode,
+          default_tempo: metadataV2.defaultTempo,
+          default_duration_seconds: metadataV2.defaultDurationSeconds,
+          default_distance_feet: metadataV2.defaultDistanceFeet,
+          history_compatibility: metadataV2.historyCompatibility,
+          safety_alternative_eligible: metadataV2.safetyAlternativeEligible,
+          active_for_new_plans: metadataV2.activeForNewPlans,
+          legacy_display_only: metadataV2.legacyDisplayOnly,
         },
         { onConflict: "slug" },
       )
@@ -51,6 +63,7 @@ export async function seedExerciseLibrary(admin: AdminClient) {
 
   for (const exercise of EXERCISES) {
     const exerciseId = exerciseIdBySlug.get(exercise.slug)!;
+    const metadataV2 = getExerciseMetadataV2(exercise);
     if (exercise.variants.length === 0) continue;
     // Upsert on the (exercise_id, location, equivalence_group) natural key
     // rather than delete-and-reinsert: strength_logs.prescribed_variant_id
@@ -64,6 +77,9 @@ export async function seedExerciseLibrary(admin: AdminClient) {
         contraindication_tags: v.contraindicationTags,
         equivalence_group: v.equivalenceGroup,
         is_short_option: v.isShortOption,
+        selection_priority: v.selectionPriority ?? metadataV2.selectionPriority,
+        programming_role: v.programmingRole ?? metadataV2.programmingRole,
+        rotation_eligible: v.rotationEligible ?? metadataV2.rotationEligible,
       })),
       { onConflict: "exercise_id,location,equivalence_group" },
     );

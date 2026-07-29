@@ -58,9 +58,37 @@ One record represents final summarized values, not each set.
 
 `id`, slug, name, movement pattern, target muscles, equipment, setup, execution, cues JSON, mistakes JSON, stop/substitute guidance, active flag.
 
+Phase-one library V2 foundations also store family slug, programming role,
+prescription metric (reps/seconds/distance/steps/breaths), side mode, optional
+tempo/duration/distance defaults, history compatibility, safety-alternative
+eligibility, and new-plan/legacy-display flags. These fields classify future
+content without rewriting historical logs.
+
 ### `exercise_variants`
 
 `id`, exercise id, location, equipment requirements, progression methods, contraindication tags, home/gym equivalence group.
+
+Variant selection is deterministic: full/short intent, explicit location,
+persisted block choice, compatible history, numeric priority, then slug.
+Variants also store programming role and rotation eligibility.
+
+### `exercise_history_compatibility`
+
+Explicit reviewed links between old and new exercise definitions. Compatibility
+is either display-only or progression-compatible with the same loading
+semantics. No numeric history crosses exercises without one of these links.
+
+### `strength_block_selections`
+
+Persists one concrete exercise variant per template slot for a dated training
+block so page reloads and database row order cannot rotate core movements.
+
+### `planned_strength_items`
+
+Materialized exercise/variant prescriptions for a planned workout. This is the
+plan-preservation foundation for future template/library changes. Existing
+plans are not backfilled because the old unordered resolver cannot prove which
+variant was originally displayed.
 
 ### `strength_templates` and `strength_template_items`
 

@@ -6,6 +6,28 @@ export interface VariantOption {
   location: Location | "either";
   equivalenceGroup: string;
   isShortOption: boolean;
+  exerciseSlug?: string;
+  selectionPriority?: number;
+  activeForNewPlans?: boolean;
+  safetyEligible?: boolean;
+  isPersistedSelection?: boolean;
+  hasCompatibleHistory?: boolean;
+}
+
+function compareVariants(a: VariantOption, b: VariantOption, location: Location, wantShort: boolean): number {
+  const booleans: Array<[boolean, boolean]> = [
+    [wantShort ? a.isShortOption : !a.isShortOption, wantShort ? b.isShortOption : !b.isShortOption],
+    [a.location === location, b.location === location],
+    [a.isPersistedSelection === true, b.isPersistedSelection === true],
+    [a.hasCompatibleHistory === true, b.hasCompatibleHistory === true],
+  ];
+  for (const [aWins, bWins] of booleans) {
+    if (aWins !== bWins) return aWins ? -1 : 1;
+  }
+
+  const priority = (a.selectionPriority ?? 100) - (b.selectionPriority ?? 100);
+  if (priority !== 0) return priority;
+  return (a.exerciseSlug ?? a.exerciseId).localeCompare(b.exerciseSlug ?? b.exerciseId);
 }
 
 /**
@@ -21,15 +43,14 @@ export function resolveVariant(
   wantShort: boolean,
 ): VariantOption | null {
   const inGroup = variants.filter(
-    (v) => v.equivalenceGroup === equivalenceGroup && (v.location === location || v.location === "either"),
+    (v) =>
+      v.equivalenceGroup === equivalenceGroup &&
+      (v.location === location || v.location === "either") &&
+      v.activeForNewPlans !== false &&
+      v.safetyEligible !== false,
   );
   if (inGroup.length === 0) return null;
-
-  if (wantShort) {
-    const short = inGroup.find((v) => v.isShortOption);
-    if (short) return short;
-  }
-  return inGroup.find((v) => !v.isShortOption) ?? inGroup[0]!;
+  return [...inGroup].sort((a, b) => compareVariants(a, b, location, wantShort))[0]!;
 }
 
 export interface TemplateItem {
