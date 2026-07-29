@@ -15,6 +15,24 @@
 - Prescription metadata supports reps, seconds, distance, steps, and breaths.
   Existing V1 records remain reps-based until the visible library expansion.
 
+## Phase 2: precise records and legacy history
+
+Ambiguous records remain in the database for historical display but are marked
+`active_for_new_plans = false` and `legacy_display_only = true`. They are never
+deleted or repurposed. New plans use precise replacements:
+
+- Bench hip thrust and floor glute bridge are separate.
+- Seated and lying leg curl machines are separate.
+- Hamstring bridge walkout no longer also means a band curl.
+- Standing cable and seated-machine hip abduction are separate.
+- Machine chest press and flat dumbbell bench press are separate.
+- Short-range dead bug no longer also means an elevated plank.
+- Farmer carry, suitcase carry, and suitcase hold are separate.
+
+Compatibility links from ambiguous history are display-only. Numeric load
+progression does not cross into a precise replacement because the prior
+variation cannot be proven.
+
 ## Core movement map
 
 | Intent | Planet Fitness | Home | Short/easier option |

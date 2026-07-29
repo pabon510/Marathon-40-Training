@@ -108,7 +108,7 @@ describe("phase-1 V2 metadata foundations", () => {
       expect(metadata.prescriptionMetric, exercise.slug).toBe("reps");
       expect(metadata.historyCompatibility, exercise.slug).toBe("exact_only");
       expect(metadata.rotationEligible, exercise.slug).toBe(false);
-      expect(metadata.activeForNewPlans, exercise.slug).toBe(true);
+      expect(typeof metadata.activeForNewPlans, exercise.slug).toBe("boolean");
     }
   });
 

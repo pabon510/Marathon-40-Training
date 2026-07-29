@@ -88,6 +88,11 @@ describe("REGRESSION: loaded exercises never recommend bodyweight", () => {
     "goblet_squat",
     "one_arm_db_row",
     "farmer_suitcase_carry",
+    "machine_chest_press",
+    "machine_seated_leg_curl",
+    "machine_lying_leg_curl",
+    "standing_cable_hip_abduction",
+    "hip_abduction_machine",
   ];
 
   it("machine and dumbbell exercises never allow a bodyweight load type", () => {
@@ -99,8 +104,7 @@ describe("REGRESSION: loaded exercises never recommend bodyweight", () => {
   });
 
   it("machine chest press style exercises never recommend bodyweight, with or without history", () => {
-    // The curated library's gym horizontal-push movement.
-    const slug = "db_bench_press";
+    const slug = "machine_chest_press";
     const firstSession = buildLoadRecommendation([], PRESCRIPTION, context(slug));
     expect(firstSession.recommendedLoadType).not.toBe("bodyweight");
     expect(firstSession.firstSessionProtocol).not.toContain("bodyweight");

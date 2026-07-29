@@ -77,6 +77,7 @@ Variants also store programming role and rotation eligibility.
 Explicit reviewed links between old and new exercise definitions. Compatibility
 is either display-only or progression-compatible with the same loading
 semantics. No numeric history crosses exercises without one of these links.
+Phase 2 seeds only display-only links for ambiguous combined records.
 
 ### `strength_block_selections`
 
