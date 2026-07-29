@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { ResolvedExerciseItem } from "@/lib/services/workoutContentService";
+import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
+import { LoadGuidance } from "@/components/load-guidance";
 
-export function GuidedMode({ items }: { items: ResolvedExerciseItem[] }) {
+export function GuidedMode({ items }: { items: GuidedExerciseItem[] }) {
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
 
@@ -32,8 +33,19 @@ export function GuidedMode({ items }: { items: ResolvedExerciseItem[] }) {
       </div>
       <h3 className="text-lg font-bold text-slate-900">{item.exercise.name}</h3>
       <p className="text-sm text-slate-600">
-        {item.setCount} x {item.repRangeLow}-{item.repRangeHigh}, rest {item.restSeconds}s
+        {item.setCount} x {item.repRangeLow}-{item.repRangeHigh}
+        {item.exercise.rep_basis === "per_side" ? " per side" : ""}, rest {item.restSeconds}s
       </p>
+
+      <LoadGuidance
+        recommendation={item.recommendation}
+        loading={{
+          loadingInstructions: item.exercise.loading_instructions,
+          loadPosition: item.exercise.load_position,
+          startLoadNote: item.exercise.start_load_note,
+          repBasis: item.exercise.rep_basis,
+        }}
+      />
 
       <div>
         <p className="text-xs font-semibold text-slate-500">Setup</p>

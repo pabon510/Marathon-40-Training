@@ -147,6 +147,12 @@ export interface StrengthLogEntryInput {
   difficulty: number | null;
   substitutionExerciseId: string | null;
   notes: string | null;
+  loadType?: "weighted" | "bodyweight" | "band" | "machine";
+  bandLevel?: "light" | "medium" | "heavy" | null;
+  repBasis?: "total" | "per_side";
+  skippedFields?: string[];
+  /** Only populated when the user opted into "sets differed" per-set entry. */
+  perSetReps?: string[];
 }
 
 export async function saveStrengthLogEntries(
@@ -154,23 +160,53 @@ export async function saveStrengthLogEntries(
   sessionId: string,
   entries: StrengthLogEntryInput[],
 ) {
-  const { error } = await supabase.from("strength_logs").insert(
-    entries.map((e) => ({
-      workout_session_id: sessionId,
-      exercise_id: e.exerciseId,
-      ordinal: e.ordinal,
-      prescribed_variant_id: e.prescribedVariantId,
-      completed_sets: e.completedSets,
-      representative_reps: e.representativeReps,
-      max_reps: e.maxReps,
-      load_value: e.loadValue,
-      load_unit: e.loadUnit,
-      difficulty: e.difficulty,
-      substitution_exercise_id: e.substitutionExerciseId,
-      notes: e.notes,
-    })),
-  );
+  const { data, error } = await supabase
+    .from("strength_logs")
+    .insert(
+      entries.map((e) => ({
+        workout_session_id: sessionId,
+        exercise_id: e.exerciseId,
+        ordinal: e.ordinal,
+        prescribed_variant_id: e.prescribedVariantId,
+        completed_sets: e.completedSets,
+        representative_reps: e.representativeReps,
+        max_reps: e.maxReps,
+        load_value: e.loadValue,
+        load_unit: e.loadUnit,
+        difficulty: e.difficulty,
+        substitution_exercise_id: e.substitutionExerciseId,
+        notes: e.notes,
+        load_type: e.loadType ?? null,
+        band_level: e.bandLevel ?? null,
+        rep_basis: e.repBasis ?? null,
+        skipped_fields: e.skippedFields ?? [],
+      })),
+    )
+    .select("id, ordinal");
   if (error) throw error;
+
+  // Optional per-set detail. The summarized values above remain the
+  // primary record; these rows only exist when the user opened
+  // "Sets differed" and entered individual set values.
+  const idByOrdinal = new Map((data ?? []).map((row) => [row.ordinal, row.id]));
+  const setRows = entries.flatMap((e) => {
+    const logId = idByOrdinal.get(e.ordinal);
+    if (!logId || !e.perSetReps || e.perSetReps.length === 0) return [];
+    return e.perSetReps
+      .map((reps, index) => ({ reps: reps.trim(), setNumber: index + 1 }))
+      .filter((s) => s.reps !== "")
+      .map((s) => ({
+        strength_log_id: logId,
+        set_number: s.setNumber,
+        reps: Number(s.reps),
+        load_value: e.loadValue,
+      }));
+  });
+
+  if (setRows.length > 0) {
+    const { error: setsError } = await supabase.from("strength_set_logs").insert(setRows);
+    if (setsError) throw setsError;
+  }
 }
 
 export interface PostWorkoutCheckInInput {

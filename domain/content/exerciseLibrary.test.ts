@@ -37,6 +37,69 @@ describe("exercise library content depth", () => {
   });
 });
 
+describe("exercise loading semantics", () => {
+  it("every exercise states explicitly how the load number is read", () => {
+    for (const ex of EXERCISES) {
+      expect(ex.loadingInstructions.length, `${ex.slug} loadingInstructions`).toBeGreaterThan(10);
+      expect(ex.loadPosition.length, `${ex.slug} loadPosition`).toBeGreaterThan(0);
+      expect(ex.loadIncrementLb, `${ex.slug} loadIncrementLb`).toBeGreaterThan(0);
+    }
+  });
+
+  it("per-hand and per-dumbbell exercises say so, rather than implying a total", () => {
+    for (const ex of EXERCISES.filter((e) => e.loadBasis === "per_dumbbell" || e.loadBasis === "per_hand")) {
+      expect(ex.loadingInstructions.toLowerCase(), `${ex.slug}`).toMatch(/per hand|one dumbbell|per dumbbell/);
+    }
+  });
+
+  it("machine exercises specify total machine weight", () => {
+    for (const ex of EXERCISES.filter((e) => e.loadBasis === "machine_total")) {
+      expect(ex.loadingInstructions.toLowerCase(), `${ex.slug}`).toContain("total");
+    }
+  });
+
+  it("unilateral exercises are marked per_side so reps are not ambiguous", () => {
+    const expectedPerSide = [
+      "step_up",
+      "assisted_split_squat",
+      "one_arm_db_row",
+      "half_kneeling_single_arm_press",
+      "clamshell",
+      "cable_hip_abduction",
+      "vertical_pull_row_substitute",
+      "pallof_press",
+      "tall_kneeling_band_hold",
+    ];
+    for (const slug of expectedPerSide) {
+      const ex = EXERCISES.find((e) => e.slug === slug);
+      expect(ex, `${slug} should exist`).toBeDefined();
+      expect(ex!.repBasis, `${slug} repBasis`).toBe("per_side");
+    }
+  });
+
+  it("per-side exercises restate that reps are per side in their loading instructions", () => {
+    for (const ex of EXERCISES.filter((e) => e.repBasis === "per_side")) {
+      expect(ex.loadingInstructions.toLowerCase(), `${ex.slug}`).toMatch(/per leg|per side/);
+    }
+  });
+
+  it("step-ups tell you to start with bodyweight and add load only when knee comfort is good", () => {
+    const stepUp = EXERCISES.find((e) => e.slug === "step_up")!;
+    expect(stepUp.defaultLoadType).toBe("bodyweight");
+    expect(stepUp.startLoadNote.toLowerCase()).toContain("bodyweight");
+    expect(stepUp.startLoadNote.toLowerCase()).toContain("knee");
+  });
+
+  it("bodyweight and band exercises do not default to a weighted load type", () => {
+    for (const ex of EXERCISES.filter((e) => e.loadBasis === "bodyweight")) {
+      expect(ex.defaultLoadType, `${ex.slug}`).toBe("bodyweight");
+    }
+    for (const ex of EXERCISES.filter((e) => e.loadBasis === "band")) {
+      expect(["band", "bodyweight"], `${ex.slug}`).toContain(ex.defaultLoadType);
+    }
+  });
+});
+
 describe("strength templates reference valid equivalence groups", () => {
   const allGroups = new Set(EXERCISES.flatMap((e) => e.variants.map((v) => v.equivalenceGroup)));
 

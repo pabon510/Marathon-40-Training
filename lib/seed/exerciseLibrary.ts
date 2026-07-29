@@ -30,6 +30,13 @@ export async function seedExerciseLibrary(admin: AdminClient) {
           stop_substitute_guidance: exercise.stopSubstituteGuidance,
           is_lower_body: exercise.isLowerBody,
           active: true,
+          load_basis: exercise.loadBasis,
+          default_load_type: exercise.defaultLoadType,
+          rep_basis: exercise.repBasis,
+          loading_instructions: exercise.loadingInstructions,
+          load_position: exercise.loadPosition,
+          start_load_note: exercise.startLoadNote,
+          load_increment_lb: exercise.loadIncrementLb,
         },
         { onConflict: "slug" },
       )
@@ -44,14 +51,11 @@ export async function seedExerciseLibrary(admin: AdminClient) {
 
   for (const exercise of EXERCISES) {
     const exerciseId = exerciseIdBySlug.get(exercise.slug)!;
-    // Variants are reference data derived entirely from the exercise slug;
-    // delete-and-reinsert keeps this idempotent without needing a natural
-    // unique key across (exercise, location, equivalence_group).
-    const { error: deleteError } = await admin.from("exercise_variants").delete().eq("exercise_id", exerciseId);
-    if (deleteError) throw new Error(`Failed to clear variants for "${exercise.slug}": ${deleteError.message}`);
-
     if (exercise.variants.length === 0) continue;
-    const { error: insertError } = await admin.from("exercise_variants").insert(
+    // Upsert on the (exercise_id, location, equivalence_group) natural key
+    // rather than delete-and-reinsert: strength_logs.prescribed_variant_id
+    // references these rows, so deleting them would break logged history.
+    const { error: upsertError } = await admin.from("exercise_variants").upsert(
       exercise.variants.map((v) => ({
         exercise_id: exerciseId,
         location: v.location,
@@ -61,8 +65,9 @@ export async function seedExerciseLibrary(admin: AdminClient) {
         equivalence_group: v.equivalenceGroup,
         is_short_option: v.isShortOption,
       })),
+      { onConflict: "exercise_id,location,equivalence_group" },
     );
-    if (insertError) throw new Error(`Failed to insert variants for "${exercise.slug}": ${insertError.message}`);
+    if (upsertError) throw new Error(`Failed to upsert variants for "${exercise.slug}": ${upsertError.message}`);
   }
 
   for (const template of TEMPLATES) {
@@ -85,13 +90,9 @@ export async function seedExerciseLibrary(admin: AdminClient) {
       throw new Error(`Failed to upsert template "${template.slug}": ${error?.message}`);
     }
 
-    const { error: deleteError } = await admin
-      .from("strength_template_items")
-      .delete()
-      .eq("template_id", data.id);
-    if (deleteError) throw new Error(`Failed to clear items for "${template.slug}": ${deleteError.message}`);
-
-    const { error: insertError } = await admin.from("strength_template_items").insert(
+    // Upsert on (template_id, ordinal) rather than delete-and-reinsert, so a
+    // template is never momentarily empty while the seed runs.
+    const { error: insertError } = await admin.from("strength_template_items").upsert(
       template.items.map((item) => ({
         template_id: data.id,
         ordinal: item.ordinal,
@@ -104,8 +105,19 @@ export async function seedExerciseLibrary(admin: AdminClient) {
         is_finisher: item.isFinisher,
         include_in_short_version: item.includeInShortVersion,
       })),
+      { onConflict: "template_id,ordinal" },
     );
     if (insertError) throw new Error(`Failed to insert items for "${template.slug}": ${insertError.message}`);
+
+    // Remove any trailing items left over from a previously longer version
+    // of this template. Nothing references template items, so this is safe.
+    const maxOrdinal = Math.max(...template.items.map((i) => i.ordinal));
+    const { error: pruneError } = await admin
+      .from("strength_template_items")
+      .delete()
+      .eq("template_id", data.id)
+      .gt("ordinal", maxOrdinal);
+    if (pruneError) throw new Error(`Failed to prune items for "${template.slug}": ${pruneError.message}`);
   }
 
   return { exerciseCount: EXERCISES.length, templateCount: TEMPLATES.length };
