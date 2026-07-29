@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getSessionDetail } from "@/lib/services/historyService";
 import { RunEditForm } from "./run-edit-form";
 import { StrengthEditForm } from "./strength-edit-form";
@@ -12,9 +13,7 @@ export default async function EditSessionPage({
 }) {
   const { sessionId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   const detail = await getSessionDetail(supabase, user!.id, sessionId);
   if (!detail) notFound();

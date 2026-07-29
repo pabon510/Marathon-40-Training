@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getRecentSessions } from "@/lib/services/historyService";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -19,9 +20,7 @@ const STATE_LABELS: Record<string, string> = {
 
 export default async function HistoryPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   const sessions = await getRecentSessions(supabase, user!.id);
 
   return (

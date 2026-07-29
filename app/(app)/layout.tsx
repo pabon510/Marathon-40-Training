@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { BottomNav, SideNav } from "@/components/nav";
 import { OfflineBanner } from "@/components/offline-banner";
 import { signOut } from "./actions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   // Defense in depth: middleware already redirects unauthenticated
   // requests, but every server-rendered layout re-checks so a stale/expired

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import { getPlanChangesForRange, getPlannedWorkoutsForRange } from "@/lib/services/planService";
 import { todayLocalDate, mondayOfWeek, addDays } from "@/lib/date";
@@ -8,9 +9,7 @@ import { SeedProfileButton } from "@/components/seed-profile-button";
 
 export default async function PlanPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
 
   if (!profile) {
