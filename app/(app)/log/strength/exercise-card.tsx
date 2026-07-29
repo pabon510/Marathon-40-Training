@@ -86,6 +86,7 @@ export function ExerciseCard({
   onChange,
   onToggleExpand,
   onMarkDone,
+  onBack,
 }: {
   item: GuidedExerciseItem;
   index: number;
@@ -94,8 +95,12 @@ export function ExerciseCard({
   onChange: (patch: Partial<ExerciseEntry>) => void;
   onToggleExpand: () => void;
   onMarkDone: () => void;
+  /** Omit (or pass null) on the first exercise, where there's nothing to go back to. */
+  onBack?: (() => void) | null;
 }) {
-  const [showContent, setShowContent] = useState(false);
+  // Open by default: this card is the merged "view instructions + log the
+  // set" screen, so there's no separate read-only guided-mode pass first.
+  const [showContent, setShowContent] = useState(true);
   const perSide = item.loadMetadata.repScope === "per_side";
   // Only load types this exercise actually supports: a leg press cannot be
   // logged as bodyweight, a pushup cannot be logged as machine.
@@ -154,6 +159,26 @@ export function ExerciseCard({
           <p>
             <span className="font-semibold">Execution:</span> {item.exercise.execution}
           </p>
+          {((item.exercise.cues as string[]) ?? []).length > 0 ? (
+            <div>
+              <p className="font-semibold">Cues</p>
+              <ul className="list-inside list-disc">
+                {((item.exercise.cues as string[]) ?? []).map((cue, idx) => (
+                  <li key={idx}>{cue}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {((item.exercise.mistakes as string[]) ?? []).length > 0 ? (
+            <div>
+              <p className="font-semibold">Common mistakes</p>
+              <ul className="list-inside list-disc">
+                {((item.exercise.mistakes as string[]) ?? []).map((mistake, idx) => (
+                  <li key={idx}>{mistake}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <p className="rounded bg-amber-50 p-2 text-xs text-amber-900">
             {item.exercise.stop_substitute_guidance}
           </p>
@@ -328,9 +353,16 @@ export function ExerciseCard({
         ) : null}
       </div>
 
-      <button type="button" onClick={onMarkDone} className="btn-secondary w-full">
-        Done with this exercise
-      </button>
+      <div className="flex gap-2">
+        {onBack ? (
+          <button type="button" onClick={onBack} className="btn-secondary flex-1">
+            Back
+          </button>
+        ) : null}
+        <button type="button" onClick={onMarkDone} className="btn-primary flex-1">
+          Done with this exercise
+        </button>
+      </div>
     </div>
   );
 }
