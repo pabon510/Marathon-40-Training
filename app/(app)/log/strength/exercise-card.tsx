@@ -22,7 +22,8 @@ export interface ExerciseEntry {
 
 export function initialEntry(item: GuidedExerciseItem): ExerciseEntry {
   return {
-    loadType: item.exercise.default_load_type,
+    // From the curated library, never the DB column — see loadMetadata.ts.
+    loadType: item.loadMetadata.defaultLoadType,
     loadValue:
       item.recommendation.recommendedLoad !== null ? String(item.recommendation.recommendedLoad) : "",
     bandLevel: "medium",
@@ -43,15 +44,15 @@ const DIFFICULTY_ANCHORS = [
   { value: 10, label: "maximal" },
 ];
 
-const LOAD_TYPES: { value: LoadTypeChoice; label: string }[] = [
-  { value: "weighted", label: "Weighted" },
-  { value: "bodyweight", label: "Bodyweight" },
-  { value: "band", label: "Band" },
-  { value: "machine", label: "Machine" },
-];
+const LOAD_TYPE_LABELS: Record<LoadTypeChoice, string> = {
+  weighted: "Weighted",
+  bodyweight: "Bodyweight",
+  band: "Band",
+  machine: "Machine",
+};
 
-function loadUnitLabel(loadBasis: string): string {
-  switch (loadBasis) {
+function loadUnitLabel(loadScope: string): string {
+  switch (loadScope) {
     case "machine_total":
       return "lb (total on the machine)";
     case "per_dumbbell":
@@ -66,7 +67,7 @@ function loadUnitLabel(loadBasis: string): string {
 }
 
 export function summaryText(item: GuidedExerciseItem, entry: ExerciseEntry): string {
-  const perSide = item.exercise.rep_basis === "per_side" ? " per side" : "";
+  const perSide = item.loadMetadata.repScope === "per_side" ? " per side" : "";
   const reps = entry.reps === "" ? "—" : entry.reps;
   const sets = entry.sets === "" ? "—" : entry.sets;
   let load: string;
@@ -95,7 +96,10 @@ export function ExerciseCard({
   onMarkDone: () => void;
 }) {
   const [showContent, setShowContent] = useState(false);
-  const perSide = item.exercise.rep_basis === "per_side";
+  const perSide = item.loadMetadata.repScope === "per_side";
+  // Only load types this exercise actually supports: a leg press cannot be
+  // logged as bodyweight, a pushup cannot be logged as machine.
+  const allowedLoadTypes = item.loadMetadata.allowedLoadTypes;
   const needsLoadValue = entry.loadType === "weighted" || entry.loadType === "machine";
 
   // Collapsed summary for a completed exercise — keeps the page short.
@@ -133,15 +137,7 @@ export function ExerciseCard({
         </span>
       </div>
 
-      <LoadGuidance
-        recommendation={item.recommendation}
-        loading={{
-          loadingInstructions: item.exercise.loading_instructions,
-          loadPosition: item.exercise.load_position,
-          startLoadNote: item.exercise.start_load_note,
-          repBasis: item.exercise.rep_basis,
-        }}
-      />
+      <LoadGuidance recommendation={item.recommendation} metadata={item.loadMetadata} />
 
       <button
         type="button"
@@ -164,31 +160,33 @@ export function ExerciseCard({
         </div>
       ) : null}
 
-      <fieldset>
-        <legend className="field-label">How was it loaded?</legend>
-        <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {LOAD_TYPES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => onChange({ loadType: t.value })}
-              aria-pressed={entry.loadType === t.value}
-              className={
-                entry.loadType === t.value
-                  ? "btn-primary px-2 py-1 text-xs"
-                  : "btn-secondary px-2 py-1 text-xs"
-              }
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      {allowedLoadTypes.length > 1 ? (
+        <fieldset>
+          <legend className="field-label">How was it loaded?</legend>
+          <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {allowedLoadTypes.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onChange({ loadType: value })}
+                aria-pressed={entry.loadType === value}
+                className={
+                  entry.loadType === value
+                    ? "btn-primary px-2 py-1 text-xs"
+                    : "btn-secondary px-2 py-1 text-xs"
+                }
+              >
+                {LOAD_TYPE_LABELS[value]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
 
       {needsLoadValue ? (
         <div>
           <label htmlFor={`load_${index}`} className="field-label">
-            Load — {loadUnitLabel(item.exercise.load_basis)}
+            Load — {loadUnitLabel(item.loadMetadata.loadScope)}
           </label>
           <input
             id={`load_${index}`}

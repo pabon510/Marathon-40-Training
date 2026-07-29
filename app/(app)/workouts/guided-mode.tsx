@@ -34,18 +34,10 @@ export function GuidedMode({ items }: { items: GuidedExerciseItem[] }) {
       <h3 className="text-lg font-bold text-slate-900">{item.exercise.name}</h3>
       <p className="text-sm text-slate-600">
         {item.setCount} x {item.repRangeLow}-{item.repRangeHigh}
-        {item.exercise.rep_basis === "per_side" ? " per side" : ""}, rest {item.restSeconds}s
+        {item.loadMetadata.repScope === "per_side" ? " per side" : ""}, rest {item.restSeconds}s
       </p>
 
-      <LoadGuidance
-        recommendation={item.recommendation}
-        loading={{
-          loadingInstructions: item.exercise.loading_instructions,
-          loadPosition: item.exercise.load_position,
-          startLoadNote: item.exercise.start_load_note,
-          repBasis: item.exercise.rep_basis,
-        }}
-      />
+      <LoadGuidance recommendation={item.recommendation} metadata={item.loadMetadata} />
 
       <div>
         <p className="text-xs font-semibold text-slate-500">Setup</p>

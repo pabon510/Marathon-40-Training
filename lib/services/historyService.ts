@@ -67,10 +67,12 @@ export async function getRecentSessions(
 }
 
 export interface StrengthLogWithExercise extends StrengthLogRow {
-  exercise: Pick<
-    ExerciseDefinitionRow,
-    "id" | "name" | "load_basis" | "default_load_type" | "rep_basis" | "loading_instructions"
-  >;
+  /**
+   * `slug` is the important field here — load/rep semantics are resolved
+   * from the curated code library by slug, not from the database columns.
+   * See domain/content/loadMetadata.ts.
+   */
+  exercise: Pick<ExerciseDefinitionRow, "id" | "slug" | "name">;
 }
 
 export interface SessionDetail {
@@ -118,14 +120,7 @@ export async function getSessionDetail(
     return [
       {
         ...log,
-        exercise: {
-          id: ex.id,
-          name: ex.name,
-          load_basis: ex.load_basis,
-          default_load_type: ex.default_load_type,
-          rep_basis: ex.rep_basis,
-          loading_instructions: ex.loading_instructions,
-        },
+        exercise: { id: ex.id, slug: ex.slug, name: ex.name },
       },
     ];
   });

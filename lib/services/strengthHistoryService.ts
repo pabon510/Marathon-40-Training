@@ -45,15 +45,17 @@ export async function getRecentExerciseHistory(
     const localDate = dateBySession.get(log.workout_session_id);
     if (!localDate) continue;
     const list = result.get(log.exercise_id) ?? [];
+    // `?? null` normalizes columns that may be absent entirely if migration
+    // 0008 has not been applied yet, so history still reads correctly.
     list.push({
       localDate,
-      loadValue: log.load_value,
-      loadType: log.load_type,
-      bandLevel: log.band_level,
-      completedSets: log.completed_sets,
-      representativeReps: log.representative_reps,
-      difficulty: log.difficulty,
-      repBasis: log.rep_basis,
+      loadValue: log.load_value ?? null,
+      loadType: log.load_type ?? null,
+      bandLevel: log.band_level ?? null,
+      completedSets: log.completed_sets ?? null,
+      representativeReps: log.representative_reps ?? null,
+      difficulty: log.difficulty ?? null,
+      repBasis: log.rep_basis ?? null,
     });
     result.set(log.exercise_id, list);
   }

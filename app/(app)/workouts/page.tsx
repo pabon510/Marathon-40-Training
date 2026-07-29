@@ -64,7 +64,7 @@ export default async function WorkoutsPage() {
               <li key={item.ordinal} className="rounded-lg border border-slate-100 p-2">
                 <p className="text-sm font-medium text-slate-800">
                   {item.exercise.name}
-                  {item.exercise.rep_basis === "per_side" ? (
+                  {item.loadMetadata.repScope === "per_side" ? (
                     <span className="ml-1 text-xs font-normal text-brand-700">(per side)</span>
                   ) : null}
                 </p>
@@ -73,15 +73,7 @@ export default async function WorkoutsPage() {
                   {item.isOptional ? " · optional" : ""}
                 </p>
                 <div className="mt-2">
-                  <LoadGuidance
-                    recommendation={item.recommendation}
-                    loading={{
-                      loadingInstructions: item.exercise.loading_instructions,
-                      loadPosition: item.exercise.load_position,
-                      startLoadNote: item.exercise.start_load_note,
-                      repBasis: item.exercise.rep_basis,
-                    }}
-                  />
+                  <LoadGuidance recommendation={item.recommendation} metadata={item.loadMetadata} />
                 </div>
               </li>
             ))}
