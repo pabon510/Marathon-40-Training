@@ -10,6 +10,11 @@ import { CheckInForm } from "./checkin-form";
 
 const STRENGTH_KINDS = new Set(["strength_a", "strength_b", "strength_full", "combined_short", "upper_core_safety"]);
 
+/** Today's already-chosen location, so the check-in remembers the answer. */
+function rememberedLocation(choice: string | null): "gym" | "home" | null {
+  return choice === "gym" || choice === "home" ? choice : null;
+}
+
 export default async function TodayPage() {
   const supabase = await createClient();
   const user = await getCurrentUser();
@@ -63,7 +68,10 @@ export default async function TodayPage() {
             checking in.
           </p>
         </div>
-        <CheckInForm needsLocation={STRENGTH_KINDS.has(workout.workout_kind)} />
+        <CheckInForm
+          needsLocation={STRENGTH_KINDS.has(workout.workout_kind)}
+          rememberedLocation={rememberedLocation(workout.location_choice)}
+        />
       </div>
     );
   }
@@ -117,7 +125,10 @@ export default async function TodayPage() {
       <details className="card">
         <summary className="cursor-pointer text-sm font-semibold text-slate-700">Refresh check-in</summary>
         <div className="mt-3">
-          <CheckInForm needsLocation={STRENGTH_KINDS.has(workout.workout_kind)} />
+          <CheckInForm
+            needsLocation={STRENGTH_KINDS.has(workout.workout_kind)}
+            rememberedLocation={rememberedLocation(workout.location_choice)}
+          />
         </div>
       </details>
     </div>

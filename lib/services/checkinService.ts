@@ -120,7 +120,7 @@ export async function submitCheckInAndRecalculate(supabase: Client, userId: stri
 
   const plannedWorkout = await getPlannedWorkoutForDate(supabase, userId, input.localDate);
   if (!plannedWorkout) {
-    return { checkIn, plannedWorkout: null, adaptation: null };
+    return { checkIn, plannedWorkout: null, adaptation: null, priorDailyKnee: null, durationMinutes: null };
   }
 
   const [priorDailyKnee, recentOuraAverage, poorRecoveryYesterday] = await Promise.all([
@@ -214,5 +214,7 @@ export async function submitCheckInAndRecalculate(supabase: Client, userId: stri
     } as unknown as Json as Record<string, unknown>,
   });
 
-  return { checkIn, plannedWorkout, adaptation, recalcResult };
+  // `plannedWorkout` is deliberately the pre-recalculation row: the caller
+  // needs the "before" side to explain what changed.
+  return { checkIn, plannedWorkout, adaptation, recalcResult, priorDailyKnee, durationMinutes };
 }

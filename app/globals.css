@@ -3,6 +3,23 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /*
+     * Height of the fixed mobile bottom nav, including the iPhone
+     * home-indicator inset. Anything that needs to sit *above* the nav (the
+     * sticky check-in submit bar) offsets itself by this, so the two can
+     * never overlap. The 3.5rem is a deliberate slight over-estimate of the
+     * nav's content height (~52px) — a few px of extra clearance is
+     * harmless, an overlap is not.
+     */
+    --bottom-nav-h: calc(3.5rem + max(12px, env(safe-area-inset-bottom)));
+  }
+  @media (min-width: 768px) {
+    /* The bottom nav is hidden at md and up; nothing to clear. */
+    :root {
+      --bottom-nav-h: 0px;
+    }
+  }
   html {
     -webkit-text-size-adjust: 100%;
   }
