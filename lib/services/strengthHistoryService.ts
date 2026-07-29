@@ -56,6 +56,9 @@ export async function getRecentExerciseHistory(
       representativeReps: log.representative_reps ?? null,
       difficulty: log.difficulty ?? null,
       repBasis: log.rep_basis ?? null,
+      painIncreased: log.pain_increased ?? null,
+      formFailed: log.form_failed ?? null,
+      recoveryAcceptable: log.recovery_acceptable ?? null,
     });
     result.set(log.exercise_id, list);
   }

@@ -19,6 +19,10 @@ export interface ExerciseExposure {
   representativeReps: number | null;
   difficulty: number | null;
   repBasis: RepBasis | null;
+  /** Null/undefined is unknown and must not silently qualify progression. */
+  painIncreased?: boolean | null;
+  formFailed?: boolean | null;
+  recoveryAcceptable?: boolean | null;
 }
 
 export interface Prescription {
@@ -140,9 +144,11 @@ function toStrengthExposure(
     // A missing difficulty is treated as "too uncertain to progress on" —
     // it must not silently read as an easy session.
     difficulty: exposure.difficulty ?? 10,
-    painIncreased: false,
-    formFailed: false,
-    recoveryAcceptable: true,
+    // Unknown evidence is conservative: progression requires explicit
+    // confirmation that pain/form/recovery criteria were satisfied.
+    painIncreased: exposure.painIncreased !== false,
+    formFailed: exposure.formFailed !== false,
+    recoveryAcceptable: exposure.recoveryAcceptable === true,
   };
 }
 

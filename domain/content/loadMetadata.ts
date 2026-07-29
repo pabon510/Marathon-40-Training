@@ -1,5 +1,7 @@
 import {
   EXERCISES,
+  getExerciseMetadataV2,
+  type ExerciseMetadataV2,
   type LoadBasis,
   type LoadType,
   type RepBasis,
@@ -16,7 +18,7 @@ import {
  * production data. The database columns are a denormalized copy for
  * querying; they are never trusted for display or recommendation.
  */
-export interface ExerciseLoadMetadata {
+export interface ExerciseLoadMetadata extends ExerciseMetadataV2 {
   slug: string;
   allowedLoadTypes: LoadType[];
   defaultLoadType: LoadType;
@@ -31,9 +33,11 @@ export interface ExerciseLoadMetadata {
 }
 
 const BY_SLUG = new Map<string, ExerciseLoadMetadata>(
-  EXERCISES.map((e) => [
-    e.slug,
-    {
+  EXERCISES.map((e) => {
+    const v2 = getExerciseMetadataV2(e);
+    return [
+      e.slug,
+      {
       slug: e.slug,
       allowedLoadTypes: e.allowedLoadTypes,
       defaultLoadType: e.defaultLoadType,
@@ -43,8 +47,10 @@ const BY_SLUG = new Map<string, ExerciseLoadMetadata>(
       loadPosition: e.loadPosition,
       startLoadNote: e.startLoadNote,
       loadIncrementLb: e.loadIncrementLb,
-    },
-  ]),
+      ...v2,
+      },
+    ];
+  }),
 );
 
 /**
@@ -61,6 +67,22 @@ const UNKNOWN_FALLBACK: Omit<ExerciseLoadMetadata, "slug"> = {
   loadPosition: "",
   startLoadNote: "",
   loadIncrementLb: 5,
+  familySlug: "unknown",
+  programmingRole: "secondary",
+  prescriptionMetric: "reps",
+  sideMode: "bilateral",
+  defaultTempo: null,
+  defaultDurationSeconds: null,
+  defaultDistanceFeet: null,
+  historyCompatibility: "exact_only",
+  progressionExerciseSlugs: [],
+  regressionExerciseSlugs: [],
+  substitutionExerciseSlugs: [],
+  safetyAlternativeEligible: false,
+  activeForNewPlans: false,
+  legacyDisplayOnly: true,
+  selectionPriority: Number.MAX_SAFE_INTEGER,
+  rotationEligible: false,
 };
 
 export function getExerciseLoadMetadata(slug: string): ExerciseLoadMetadata {

@@ -20,6 +20,36 @@ export type LoadType = "weighted" | "bodyweight" | "band" | "machine";
 
 /** Whether a prescribed rep count means total reps or reps on each side. */
 export type RepBasis = "total" | "per_side";
+export type PrescriptionMetric = "reps" | "seconds" | "distance_feet" | "steps" | "breaths";
+export type SideMode = "bilateral" | "alternating" | "per_side";
+export type ProgrammingRole =
+  | "primary"
+  | "secondary"
+  | "accessory"
+  | "regression"
+  | "progression"
+  | "safety_alternative"
+  | "warmup";
+export type HistoryCompatibility = "exact_only" | "same_family";
+
+export interface ExerciseMetadataV2 {
+  familySlug: string;
+  programmingRole: ProgrammingRole;
+  prescriptionMetric: PrescriptionMetric;
+  sideMode: SideMode;
+  defaultTempo: string | null;
+  defaultDurationSeconds: number | null;
+  defaultDistanceFeet: number | null;
+  historyCompatibility: HistoryCompatibility;
+  progressionExerciseSlugs: string[];
+  regressionExerciseSlugs: string[];
+  substitutionExerciseSlugs: string[];
+  safetyAlternativeEligible: boolean;
+  activeForNewPlans: boolean;
+  legacyDisplayOnly: boolean;
+  selectionPriority: number;
+  rotationEligible: boolean;
+}
 
 export interface ExerciseContent {
   slug: string;
@@ -54,6 +84,13 @@ export interface ExerciseContent {
   startLoadNote: string;
   /** Smallest practical load increase for this exercise, in pounds. */
   loadIncrementLb: number;
+  /**
+   * Phase-1 metadata is optional in the authored catalogue so existing
+   * records remain data-compatible. `getExerciseMetadataV2` below supplies
+   * deterministic conservative defaults until each record is explicitly
+   * classified during the visible library expansion.
+   */
+  metadataV2?: Partial<ExerciseMetadataV2>;
   variants: {
     location: "gym" | "home" | "either";
     equivalenceGroup: string;
@@ -61,7 +98,37 @@ export interface ExerciseContent {
     progressionMethods: string[];
     contraindicationTags: string[];
     isShortOption: boolean;
+    selectionPriority?: number;
+    programmingRole?: ProgrammingRole;
+    rotationEligible?: boolean;
   }[];
+}
+
+/**
+ * Conservative V2 defaults. Nothing rotates implicitly, history stays tied
+ * to the exact exercise, and every existing exercise remains available.
+ */
+export function getExerciseMetadataV2(exercise: ExerciseContent): ExerciseMetadataV2 {
+  const role: ProgrammingRole = exercise.variants.some((v) => v.isShortOption) ? "regression" : "primary";
+  return {
+    familySlug: exercise.slug,
+    programmingRole: role,
+    prescriptionMetric: "reps",
+    sideMode: exercise.repBasis === "per_side" ? "per_side" : "bilateral",
+    defaultTempo: null,
+    defaultDurationSeconds: null,
+    defaultDistanceFeet: null,
+    historyCompatibility: "exact_only",
+    progressionExerciseSlugs: [],
+    regressionExerciseSlugs: [],
+    substitutionExerciseSlugs: [],
+    safetyAlternativeEligible: !exercise.isLowerBody,
+    activeForNewPlans: true,
+    legacyDisplayOnly: false,
+    selectionPriority: 100,
+    rotationEligible: false,
+    ...exercise.metadataV2,
+  };
 }
 
 const STOP_LOWER_BODY = "Stop or substitute this exercise if knee discomfort increases during or after.";

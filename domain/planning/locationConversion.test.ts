@@ -29,6 +29,41 @@ describe("resolveVariant", () => {
   it("returns null for an unknown equivalence group", () => {
     expect(resolveVariant(variants, "unknown-group", "home", false)).toBeNull();
   });
+
+  it("is deterministic regardless of database/input row order", () => {
+    const choices: VariantOption[] = [
+      { id: "z", exerciseId: "z", exerciseSlug: "zeta", location: "home", equivalenceGroup: "squat", isShortOption: false, selectionPriority: 20 },
+      { id: "a", exerciseId: "a", exerciseSlug: "alpha", location: "home", equivalenceGroup: "squat", isShortOption: false, selectionPriority: 10 },
+      { id: "e", exerciseId: "e", exerciseSlug: "either", location: "either", equivalenceGroup: "squat", isShortOption: false, selectionPriority: 1 },
+    ];
+    expect(resolveVariant(choices, "squat", "home", false)?.id).toBe("a");
+    expect(resolveVariant([...choices].reverse(), "squat", "home", false)?.id).toBe("a");
+  });
+
+  it("prefers exact location over an either variant even when either has a lower numeric priority", () => {
+    const choices: VariantOption[] = [
+      { id: "either", exerciseId: "either", location: "either", equivalenceGroup: "squat", isShortOption: false, selectionPriority: 1 },
+      { id: "home", exerciseId: "home", location: "home", equivalenceGroup: "squat", isShortOption: false, selectionPriority: 100 },
+    ];
+    expect(resolveVariant(choices, "squat", "home", false)?.id).toBe("home");
+  });
+
+  it("honours a persisted block choice before history and numeric priority", () => {
+    const choices: VariantOption[] = [
+      { id: "history", exerciseId: "history", location: "gym", equivalenceGroup: "pull", isShortOption: false, selectionPriority: 1, hasCompatibleHistory: true },
+      { id: "persisted", exerciseId: "persisted", location: "gym", equivalenceGroup: "pull", isShortOption: false, selectionPriority: 100, isPersistedSelection: true },
+    ];
+    expect(resolveVariant(choices, "pull", "gym", false)?.id).toBe("persisted");
+  });
+
+  it("excludes inactive and safety-ineligible variants", () => {
+    const choices: VariantOption[] = [
+      { id: "inactive", exerciseId: "inactive", location: "gym", equivalenceGroup: "squat", isShortOption: false, activeForNewPlans: false },
+      { id: "unsafe", exerciseId: "unsafe", location: "gym", equivalenceGroup: "squat", isShortOption: false, safetyEligible: false },
+      { id: "allowed", exerciseId: "allowed", location: "gym", equivalenceGroup: "squat", isShortOption: false },
+    ];
+    expect(resolveVariant(choices, "squat", "gym", false)?.id).toBe("allowed");
+  });
 });
 
 describe("selectTemplateItemsForVersion", () => {

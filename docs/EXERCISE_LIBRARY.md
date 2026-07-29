@@ -6,6 +6,14 @@
 - Each implemented exercise record must include setup, steps, 2–3 cues, common mistakes, target muscles, and stop/substitute guidance.
 - No Smith-machine exercises. No adjustable-kettlebell swings.
 - Lower-body entries always instruct stopping/substituting if knee discomfort increases.
+- Exercise resolution must be deterministic and must not rely on database row
+  order. Core selections remain stable within a training block; rotation is
+  opt-in for approved accessories only.
+- Historical progression stays attached to the exact exercise unless an
+  explicit reviewed compatibility mapping confirms identical loading
+  semantics.
+- Prescription metadata supports reps, seconds, distance, steps, and breaths.
+  Existing V1 records remain reps-based until the visible library expansion.
 
 ## Core movement map
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXERCISES, TEMPLATES } from "./exerciseLibrary";
+import { EXERCISES, TEMPLATES, getExerciseMetadataV2 } from "./exerciseLibrary";
 
 describe("exercise library content depth", () => {
   it("every exercise has setup, execution, 2-3 cues, mistakes, muscles, and stop/substitute guidance", () => {
@@ -96,6 +96,33 @@ describe("exercise loading semantics", () => {
     }
     for (const ex of EXERCISES.filter((e) => e.loadBasis === "band")) {
       expect(["band", "bodyweight"], `${ex.slug}`).toContain(ex.defaultLoadType);
+    }
+  });
+});
+
+describe("phase-1 V2 metadata foundations", () => {
+  it("normalizes every existing exercise conservatively", () => {
+    for (const exercise of EXERCISES) {
+      const metadata = getExerciseMetadataV2(exercise);
+      expect(metadata.familySlug.length, exercise.slug).toBeGreaterThan(0);
+      expect(metadata.prescriptionMetric, exercise.slug).toBe("reps");
+      expect(metadata.historyCompatibility, exercise.slug).toBe("exact_only");
+      expect(metadata.rotationEligible, exercise.slug).toBe(false);
+      expect(metadata.activeForNewPlans, exercise.slug).toBe(true);
+    }
+  });
+
+  it("never marks a lower-body exercise as a safety alternative by default", () => {
+    for (const exercise of EXERCISES.filter((e) => e.isLowerBody)) {
+      expect(getExerciseMetadataV2(exercise).safetyAlternativeEligible, exercise.slug).toBe(false);
+    }
+  });
+
+  it("derives side mode from the existing rep basis", () => {
+    for (const exercise of EXERCISES) {
+      expect(getExerciseMetadataV2(exercise).sideMode, exercise.slug).toBe(
+        exercise.repBasis === "per_side" ? "per_side" : "bilateral",
+      );
     }
   });
 });
