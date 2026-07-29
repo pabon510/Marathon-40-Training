@@ -1,46 +1,43 @@
+import type { ExerciseLoadMetadata } from "@/domain/content/loadMetadata";
 import type { LoadRecommendation } from "@/domain/progression/loadRecommendation";
-
-export interface LoadingInfo {
-  loadingInstructions: string;
-  loadPosition: string;
-  startLoadNote: string;
-  repBasis: "total" | "per_side";
-}
 
 /**
  * Shown above an exercise's input fields: exactly how this movement is
- * loaded and counted, plus either the first-session load-finding protocol
+ * loaded and counted, plus either the first-session load-selection protocol
  * or today's recommendation with last session's performance for context.
  */
 export function LoadGuidance({
   recommendation,
-  loading,
+  metadata,
 }: {
   recommendation: LoadRecommendation;
-  loading: LoadingInfo;
+  metadata: ExerciseLoadMetadata;
 }) {
   return (
     <div className="space-y-2 rounded-lg bg-slate-50 p-3">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">How to load it</p>
-        <p className="text-sm text-slate-700">{loading.loadingInstructions}</p>
-        {loading.loadPosition ? (
-          <p className="text-xs text-slate-500">Position: {loading.loadPosition}</p>
+        <p className="text-sm text-slate-700">{metadata.loadingInstructions}</p>
+        {metadata.loadPosition ? (
+          <p className="text-xs text-slate-500">Position: {metadata.loadPosition}</p>
         ) : null}
-        {loading.repBasis === "per_side" ? (
+        {metadata.repScope === "per_side" ? (
           <p className="text-xs font-medium text-brand-700">Reps are per side.</p>
         ) : null}
-        {loading.startLoadNote ? (
-          <p className="mt-1 text-xs font-medium text-safety-warn">{loading.startLoadNote}</p>
+        {metadata.startLoadNote ? (
+          <p className="mt-1 text-xs font-medium text-safety-warn">{metadata.startLoadNote}</p>
         ) : null}
       </div>
 
       {recommendation.kind === "first_session" ? (
         <div className="border-t border-slate-200 pt-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            First time — find your working load
+            First time — choose a starting load
           </p>
-          <ol className="mt-1 list-inside list-decimal space-y-0.5 text-sm text-slate-700">
+          {recommendation.firstSessionProtocol ? (
+            <p className="mt-1 text-sm font-medium text-slate-800">{recommendation.firstSessionProtocol}</p>
+          ) : null}
+          <ol className="mt-2 list-inside list-decimal space-y-0.5 text-sm text-slate-700">
             {recommendation.firstSessionSteps.map((step) => (
               <li key={step}>{step}</li>
             ))}

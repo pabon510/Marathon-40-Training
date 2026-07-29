@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { SessionDetail } from "@/lib/services/historyService";
+import { getExerciseLoadMetadata, resolveHistoricalLoadType } from "@/domain/content/loadMetadata";
 import { RedFlagWarning } from "@/components/red-flag-warning";
 import { saveStrengthEdit, type EditFormState } from "./actions";
 import { PostWorkoutFields, SaveResult } from "./edit-shared";
@@ -20,19 +21,25 @@ interface EntryState {
   difficulty: string;
 }
 
-const LOAD_TYPES: { value: LoadType; label: string }[] = [
-  { value: "weighted", label: "Weighted" },
-  { value: "bodyweight", label: "Bodyweight" },
-  { value: "band", label: "Band" },
-  { value: "machine", label: "Machine" },
-];
+const LOAD_TYPE_LABELS: Record<LoadType, string> = {
+  weighted: "Weighted",
+  bodyweight: "Bodyweight",
+  band: "Band",
+  machine: "Machine",
+};
 
 export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
   const [state, formAction, pending] = useActionState(saveStrengthEdit, initialState);
   const [unusualPain, setUnusualPain] = useState(detail.session.unusual_pain_flag);
   const [entries, setEntries] = useState<EntryState[]>(() =>
     detail.strengthLogs.map((log) => ({
-      loadType: (log.load_type ?? log.exercise.default_load_type) as LoadType,
+      // Resolved from the curated library and the recorded load, so a log
+      // saved before load_type existed is not shown as bodyweight.
+      loadType: resolveHistoricalLoadType(
+        log.load_value,
+        log.load_type,
+        getExerciseLoadMetadata(log.exercise.slug),
+      ),
       loadValue: log.load_value !== null ? String(log.load_value) : "",
       bandLevel: (log.band_level ?? "medium") as BandLevel,
       sets: log.completed_sets !== null ? String(log.completed_sets) : "",
@@ -59,7 +66,8 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
 
       {detail.strengthLogs.map((log, i) => {
         const entry = entries[i]!;
-        const perSide = log.exercise.rep_basis === "per_side";
+        const metadata = getExerciseLoadMetadata(log.exercise.slug);
+        const perSide = metadata.repScope === "per_side";
         const needsLoadValue = entry.loadType === "weighted" || entry.loadType === "machine";
         return (
           <div key={log.id} className="card space-y-3">
@@ -73,29 +81,31 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
 
             <div>
               <p className="text-sm font-semibold text-slate-900">{log.exercise.name}</p>
-              <p className="text-xs text-slate-500">{log.exercise.loading_instructions}</p>
+              <p className="text-xs text-slate-500">{metadata.loadingInstructions}</p>
             </div>
 
-            <fieldset>
-              <legend className="field-label">How was it loaded?</legend>
-              <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {LOAD_TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => update(i, { loadType: t.value })}
-                    aria-pressed={entry.loadType === t.value}
-                    className={
-                      entry.loadType === t.value
-                        ? "btn-primary px-2 py-1 text-xs"
-                        : "btn-secondary px-2 py-1 text-xs"
-                    }
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            {metadata.allowedLoadTypes.length > 1 ? (
+              <fieldset>
+                <legend className="field-label">How was it loaded?</legend>
+                <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {metadata.allowedLoadTypes.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => update(i, { loadType: value })}
+                      aria-pressed={entry.loadType === value}
+                      className={
+                        entry.loadType === value
+                          ? "btn-primary px-2 py-1 text-xs"
+                          : "btn-secondary px-2 py-1 text-xs"
+                      }
+                    >
+                      {LOAD_TYPE_LABELS[value]}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            ) : null}
 
             {needsLoadValue ? (
               <div>

@@ -7,12 +7,18 @@ import {
   type ExerciseExposure,
   type LoadRecommendation,
 } from "@/domain/progression/loadRecommendation";
+import { getExerciseLoadMetadata, type ExerciseLoadMetadata } from "@/domain/content/loadMetadata";
 
 type Client = SupabaseClient<Database>;
 
 export interface GuidedExerciseItem extends ResolvedExerciseItem {
   recommendation: LoadRecommendation;
   history: ExerciseExposure[];
+  /**
+   * Resolved from the curated code library by slug, not from the database
+   * row — see domain/content/loadMetadata.ts for why.
+   */
+  loadMetadata: ExerciseLoadMetadata;
 }
 
 interface HomeEquipment {
@@ -60,6 +66,7 @@ export async function attachLoadGuidance(
   return items.map((item) => {
     const history = historyByExercise.get(item.exercise.id) ?? [];
     const lastLoad = history[0]?.loadValue ?? null;
+    const loadMetadata = getExerciseLoadMetadata(item.exercise.slug);
     const recommendation = buildLoadRecommendation(
       history,
       {
@@ -68,14 +75,11 @@ export async function attachLoadGuidance(
         repRangeHigh: item.repRangeHigh,
       },
       {
-        loadBasis: item.exercise.load_basis,
-        defaultLoadType: item.exercise.default_load_type,
-        repBasis: item.exercise.rep_basis,
-        loadIncrementLb: Number(item.exercise.load_increment_lb),
+        metadata: loadMetadata,
         location,
         hasHeavierEquipmentAvailable: hasHeavierEquipment(location, lastLoad, profile),
       },
     );
-    return { ...item, recommendation, history };
+    return { ...item, recommendation, history, loadMetadata };
   });
 }
