@@ -8,6 +8,7 @@ const LABELS: Record<SelectionReasonCode, string> = {
   default_selection: "Core movement selected for this block",
   user_preference: "Selected because you prefer this exercise",
   preference_unavailable: "Used because no valid alternative could honor your avoid preference",
+  manual_substitution: "Substituted for this workout",
 };
 
 export function selectionReasonLabel(reason: SelectionReasonCode): string {

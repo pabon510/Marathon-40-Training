@@ -329,6 +329,18 @@ export interface PlannedStrengthItemRow {
   created_at: string;
 }
 
+export interface PlannedExerciseSubstitutionRow {
+  id: string;
+  planned_workout_id: string;
+  ordinal: number;
+  original_exercise_id: string;
+  substitute_exercise_id: string;
+  reason_code: "prefer_machine" | "equipment_unavailable" | "uncomfortable" | "different_exercise" | "home_conversion";
+  substitution_quality: "exact" | "close" | "general";
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StrengthTemplateRow {
   id: string;
   slug: string;
@@ -443,6 +455,13 @@ export interface Database {
         Insertable<
           PlannedStrengthItemRow,
           "planned_workout_id" | "ordinal" | "exercise_variant_id" | "exercise_id" | "set_count" | "rep_range_low" | "rep_range_high" | "selection_reason_code"
+        >
+      >;
+      planned_exercise_substitutions: TableDef<
+        PlannedExerciseSubstitutionRow,
+        Insertable<
+          PlannedExerciseSubstitutionRow,
+          "planned_workout_id" | "ordinal" | "original_exercise_id" | "substitute_exercise_id" | "reason_code" | "substitution_quality"
         >
       >;
       strength_templates: TableDef<StrengthTemplateRow, Insertable<StrengthTemplateRow, "slug" | "name" | "goal" | "emphasis" | "duration_minutes">>;

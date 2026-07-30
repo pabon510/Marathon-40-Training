@@ -8,11 +8,13 @@ import {
 } from "@/domain/planning/locationConversion";
 import type { Location } from "@/domain/types";
 import { strengthSlotKey, trainingBlockWindow } from "@/domain/planning/trainingBlock";
+import type { SavedSubstitution } from "@/lib/services/exerciseSubstitutionService";
 
 type Client = SupabaseClient<Database>;
 
 export interface ResolvedExerciseItem extends ResolvedWorkoutItem {
   exercise: Database["public"]["Tables"]["exercise_definitions"]["Row"];
+  savedSubstitution?: SavedSubstitution;
 }
 
 /** Fetches a strength template's items + resolves each to the correct gym/home/short exercise variant, with full content. */

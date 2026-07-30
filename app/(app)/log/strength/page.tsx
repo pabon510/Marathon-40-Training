@@ -3,11 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
-import { resolveStrengthWorkout } from "@/lib/services/workoutContentService";
 import { todayLocalDate } from "@/lib/date";
 import { SeedProfileButton } from "@/components/seed-profile-button";
-import { attachLoadGuidance, type GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
+import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { StrengthLogForm } from "./strength-form";
+import { resolveWorkoutStrengthSection } from "@/lib/services/workoutDetailService";
 
 export default async function LogStrengthPage() {
   const supabase = await createClient();
@@ -21,21 +21,14 @@ export default async function LogStrengthPage() {
   let items: GuidedExerciseItem[] = [];
   const location = workout?.location_choice === "gym" ? "gym" : "home";
   if (workout?.strength_template_id) {
-    const wantShort = workout.planned_duration_minutes < 40;
-    const resolved = await resolveStrengthWorkout(
-      supabase,
-      workout.strength_template_id,
-      location,
-      wantShort,
-      { userId: user!.id, localDate },
-    );
-    items = await attachLoadGuidance(supabase, user!.id, profile, resolved.items, location);
+    const strength = await resolveWorkoutStrengthSection(supabase, user!.id, profile, workout, location);
+    items = strength?.items ?? [];
   }
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-slate-900">Log strength</h1>
-      <StrengthLogForm items={items} defaultLocation={location} />
+      <StrengthLogForm items={items} defaultLocation={location} plannedWorkoutId={workout?.id ?? null} />
       <Link href="/log/skip" className="block text-center text-sm text-slate-500 underline">
         Skip today&apos;s workout instead
       </Link>
