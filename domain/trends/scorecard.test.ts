@@ -9,6 +9,7 @@ function baseInputs(overrides: Partial<ScorecardInputs> = {}): ScorecardInputs {
     weeklyMaxKnee: [2, 2, 1, 1],
     checkedInWorkoutDays: 16,
     totalWorkoutDays: 18,
+    fourWeekWindowComplete: true,
     ...overrides,
   };
 }
@@ -44,6 +45,12 @@ describe("evaluateScorecard", () => {
 
   it("knee trend criterion fails if week 4 max is higher than week 1 max", () => {
     const result = evaluateScorecard(baseInputs({ weeklyMaxKnee: [1, 2, 3, 4] }));
+    const criterion = result.criteria.find((c) => c.id === "knee_trend");
+    expect(criterion?.met).toBe(false);
+  });
+
+  it("does not award the knee trend goal before the four-week window is complete", () => {
+    const result = evaluateScorecard(baseInputs({ fourWeekWindowComplete: false }));
     const criterion = result.criteria.find((c) => c.id === "knee_trend");
     expect(criterion?.met).toBe(false);
   });
