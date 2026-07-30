@@ -170,7 +170,35 @@ export interface RunLogRow {
   knee_immediately_after: number | null;
   is_stroller: boolean;
   stroller_discomfort_areas: string[];
+  import_id: string | null;
+  data_source: "manual" | "garmin_screenshot";
+  moving_duration_seconds: number | null;
+  elapsed_duration_seconds: number | null;
+  moving_pace_seconds_per_mile: number | null;
+  best_pace_seconds_per_mile: number | null;
+  elevation_loss_feet: number | null;
+  aerobic_training_effect: number | null;
+  anaerobic_training_effect: number | null;
+  average_temperature_f: number | null;
+  average_cadence_spm: number | null;
+  maximum_cadence_spm: number | null;
+  average_stride_length_meters: number | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface RunImportRow {
+  id: string;
+  user_id: string;
+  provider: "garmin_screenshot";
+  status: "draft" | "confirmed" | "discarded";
+  model: string;
+  parser_version: string;
+  image_count: number;
+  extracted_payload: Json;
+  run_log_id: string | null;
+  created_at: string;
+  confirmed_at: string | null;
   updated_at: string;
 }
 
@@ -423,6 +451,10 @@ export interface Database {
         Insertable<WorkoutSessionRow, "user_id" | "local_date" | "session_type" | "completion_state">
       >;
       run_logs: TableDef<RunLogRow, Insertable<RunLogRow, "workout_session_id" | "run_type">>;
+      run_imports: TableDef<
+        RunImportRow,
+        Insertable<RunImportRow, "user_id" | "model" | "parser_version" | "image_count">
+      >;
       run_splits: TableDef<RunSplitRow, Insertable<RunSplitRow, "run_log_id" | "ordinal" | "duration_seconds">>;
       strength_logs: TableDef<StrengthLogRow, Insertable<StrengthLogRow, "workout_session_id" | "exercise_id" | "ordinal">>;
       strength_set_logs: TableDef<StrengthSetLogRow, Insertable<StrengthSetLogRow, "strength_log_id" | "set_number">>;

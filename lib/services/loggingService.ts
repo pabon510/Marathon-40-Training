@@ -93,6 +93,19 @@ export interface RunLogInput {
   kneeImmediatelyAfter: number | null;
   isStroller: boolean;
   strollerDiscomfortAreas: string[];
+  importId?: string | null;
+  dataSource?: "manual" | "garmin_screenshot";
+  movingDurationSeconds?: number | null;
+  elapsedDurationSeconds?: number | null;
+  movingPaceSecondsPerMile?: number | null;
+  bestPaceSecondsPerMile?: number | null;
+  elevationLossFeet?: number | null;
+  aerobicTrainingEffect?: number | null;
+  anaerobicTrainingEffect?: number | null;
+  averageTemperatureF?: number | null;
+  averageCadenceSpm?: number | null;
+  maximumCadenceSpm?: number | null;
+  averageStrideLengthMeters?: number | null;
   splits?: { ordinal: number; durationSeconds: number; splitDistanceMiles?: number }[];
 }
 
@@ -119,6 +132,19 @@ export async function saveRunLog(supabase: Client, input: RunLogInput) {
       knee_immediately_after: input.kneeImmediatelyAfter,
       is_stroller: input.isStroller,
       stroller_discomfort_areas: input.strollerDiscomfortAreas,
+      import_id: input.importId ?? null,
+      data_source: input.dataSource ?? "manual",
+      moving_duration_seconds: input.movingDurationSeconds ?? null,
+      elapsed_duration_seconds: input.elapsedDurationSeconds ?? null,
+      moving_pace_seconds_per_mile: input.movingPaceSecondsPerMile ?? null,
+      best_pace_seconds_per_mile: input.bestPaceSecondsPerMile ?? null,
+      elevation_loss_feet: input.elevationLossFeet ?? null,
+      aerobic_training_effect: input.aerobicTrainingEffect ?? null,
+      anaerobic_training_effect: input.anaerobicTrainingEffect ?? null,
+      average_temperature_f: input.averageTemperatureF ?? null,
+      average_cadence_spm: input.averageCadenceSpm ?? null,
+      maximum_cadence_spm: input.maximumCadenceSpm ?? null,
+      average_stride_length_meters: input.averageStrideLengthMeters ?? null,
     })
     .select("id")
     .single();
