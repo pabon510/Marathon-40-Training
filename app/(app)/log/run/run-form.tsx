@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { RedFlagWarning } from "@/components/red-flag-warning";
+import type { GarminExtraction } from "@/domain/import/garminScreenshot";
+import { extractionToFormValues, type GarminFormValues } from "@/domain/import/garminForm";
 import { logRunAction, type LogRunFormState } from "./actions";
+import { GarminScreenshotImport } from "./garmin-screenshot-import";
 
 const initialState: LogRunFormState = {};
 
@@ -19,6 +22,25 @@ export function RunLogForm({
   const [unusualPain, setUnusualPain] = useState(false);
   const [isStroller, setIsStroller] = useState(defaultStroller && strollerAllowed);
   const [runType, setRunType] = useState<"outdoor" | "treadmill" | "run_walk">("outdoor");
+  const [importId, setImportId] = useState("");
+  const [extraction, setExtraction] = useState<GarminExtraction>();
+  const [values, setValues] = useState<GarminFormValues>({
+    distanceMiles: "", durationMinutes: "", paceOverrideMinutes: "", averageHr: "",
+    maximumHr: "", elevationGainFeet: "", movingDurationSeconds: "", elapsedDurationSeconds: "",
+    movingPaceSecondsPerMile: "", bestPaceSecondsPerMile: "", elevationLossFeet: "",
+    aerobicTrainingEffect: "", anaerobicTrainingEffect: "", averageTemperatureF: "",
+    averageCadenceSpm: "", maximumCadenceSpm: "", averageStrideLengthMeters: "",
+  });
+
+  function setValue(name: keyof GarminFormValues, value: string) {
+    setValues((current) => ({ ...current, [name]: value }));
+  }
+
+  function applyImport(id: string, result: GarminExtraction) {
+    setImportId(id);
+    setExtraction(result);
+    setValues(extractionToFormValues(result));
+  }
 
   if (state.success) {
     return (
@@ -34,6 +56,21 @@ export function RunLogForm({
 
   return (
     <form action={formAction} className="card space-y-4">
+      <GarminScreenshotImport onImported={applyImport} />
+      <input type="hidden" name="importId" value={importId} />
+      {importId ? (
+        <div className="rounded-lg border border-safety-ok/40 bg-green-50 p-3">
+          <p className="text-sm font-semibold text-green-900">Garmin draft ready for review</p>
+          <p className="mt-1 text-xs text-green-800">
+            Check every value below. You can correct or clear anything before saving.
+          </p>
+          {extraction?.warnings.length ? (
+            <ul className="mt-2 list-disc pl-5 text-xs text-amber-800">
+              {extraction.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       <div>
         <span className="field-label">Type</span>
         <div className="mt-2 flex gap-4">
@@ -81,13 +118,13 @@ export function RunLogForm({
           <label htmlFor="distanceMiles" className="field-label">
             Distance (miles)
           </label>
-          <input id="distanceMiles" name="distanceMiles" type="number" step="0.01" inputMode="decimal" className="text-input" />
+          <input id="distanceMiles" name="distanceMiles" type="number" step="0.01" inputMode="decimal" className="text-input" value={values.distanceMiles} onChange={(e) => setValue("distanceMiles", e.target.value)} />
         </div>
         <div>
           <label htmlFor="durationMinutes" className="field-label">
             Duration (minutes)
           </label>
-          <input id="durationMinutes" name="durationMinutes" type="number" inputMode="numeric" className="text-input" />
+          <input id="durationMinutes" name="durationMinutes" type="number" step="0.01" inputMode="decimal" className="text-input" value={values.durationMinutes} onChange={(e) => setValue("durationMinutes", e.target.value)} />
         </div>
       </div>
 
@@ -102,6 +139,8 @@ export function RunLogForm({
           step="0.01"
           inputMode="decimal"
           className="text-input"
+          value={values.paceOverrideMinutes}
+          onChange={(e) => setValue("paceOverrideMinutes", e.target.value)}
         />
         <p className="field-hint">Pace is otherwise calculated automatically from distance/duration.</p>
       </div>
@@ -111,13 +150,13 @@ export function RunLogForm({
           <label htmlFor="averageHr" className="field-label">
             Average HR
           </label>
-          <input id="averageHr" name="averageHr" type="number" inputMode="numeric" className="text-input" />
+          <input id="averageHr" name="averageHr" type="number" inputMode="numeric" className="text-input" value={values.averageHr} onChange={(e) => setValue("averageHr", e.target.value)} />
         </div>
         <div>
           <label htmlFor="maximumHr" className="field-label">
             Max HR
           </label>
-          <input id="maximumHr" name="maximumHr" type="number" inputMode="numeric" className="text-input" />
+          <input id="maximumHr" name="maximumHr" type="number" inputMode="numeric" className="text-input" value={values.maximumHr} onChange={(e) => setValue("maximumHr", e.target.value)} />
         </div>
       </div>
 
@@ -125,8 +164,48 @@ export function RunLogForm({
         <label htmlFor="elevationGainFeet" className="field-label">
           Elevation gain (feet, optional)
         </label>
-        <input id="elevationGainFeet" name="elevationGainFeet" type="number" inputMode="numeric" className="text-input" />
+        <input id="elevationGainFeet" name="elevationGainFeet" type="number" inputMode="numeric" className="text-input" value={values.elevationGainFeet} onChange={(e) => setValue("elevationGainFeet", e.target.value)} />
       </div>
+
+      {importId ? (
+        <details className="rounded-lg border border-slate-200 p-3" open>
+          <summary className="cursor-pointer text-sm font-semibold">Additional Garmin details</summary>
+          <p className="mt-1 text-xs text-slate-500">Optional extracted values. Correct or clear any field.</p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {([
+              ["movingDurationSeconds", "Moving time (seconds)", "1"],
+              ["elapsedDurationSeconds", "Elapsed time (seconds)", "1"],
+              ["movingPaceSecondsPerMile", "Moving pace (sec/mi)", "0.01"],
+              ["bestPaceSecondsPerMile", "Best pace (sec/mi)", "0.01"],
+              ["elevationLossFeet", "Elevation loss (ft)", "0.01"],
+              ["aerobicTrainingEffect", "Aerobic effect", "0.1"],
+              ["anaerobicTrainingEffect", "Anaerobic effect", "0.1"],
+              ["averageTemperatureF", "Avg temperature (°F)", "0.1"],
+              ["averageCadenceSpm", "Avg cadence (spm)", "0.1"],
+              ["maximumCadenceSpm", "Max cadence (spm)", "0.1"],
+              ["averageStrideLengthMeters", "Stride length (m)", "0.01"],
+            ] as const).map(([name, label, step]) => (
+              <div key={name}>
+                <label htmlFor={name} className="field-label">{label}</label>
+                <input
+                  id={name}
+                  name={name}
+                  type="number"
+                  min="0"
+                  step={step}
+                  inputMode="decimal"
+                  className="text-input"
+                  value={values[name]}
+                  onChange={(event) => setValue(name, event.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Confidence and source evidence remain attached to this import for traceability.
+          </p>
+        </details>
+      ) : null}
 
       <div>
         <label htmlFor="effort" className="field-label">

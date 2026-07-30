@@ -38,12 +38,26 @@ Constraints enforce ranges. Only the newest check-in for the day drives the acti
 
 ### `run_logs`
 
-`workout_session_id`, run type, stroller flag, optional stroller-related discomfort areas, distance miles, duration seconds, calculated pace, pace override, average HR, maximum HR, elevation gain feet, highest knee during, knee immediately after.
+`workout_session_id`, run type, stroller flag, optional stroller-related discomfort areas, distance miles, duration seconds, calculated pace, pace override, average HR, maximum HR, elevation gain/loss feet, highest knee during, knee immediately after, data source, and optional Garmin screenshot import id.
+
+Screenshot-assisted records may also store moving and elapsed time, moving and
+best pace, aerobic and anaerobic training effect, average temperature, average
+and maximum cadence, and average stride length. All are nullable so historical
+manual records remain valid.
 
 Stroller context is separate from run type so an outdoor run-walk may also be
 a stroller run. Stroller runs count normally toward time, mileage, completion,
 and progression eligibility, but comparable-run trends partition them from
 standard runs.
+
+### `run_imports`
+
+Stores an authenticated user's temporary Garmin screenshot extraction as a
+reviewable draft. It records model/parser provenance, screenshot count,
+structured extracted values with confidence and source evidence, status, and
+the confirmed run-log id. Screenshot bytes are never stored. A draft has no
+effect on workout completion, progress, or adaptation; only the user-confirmed
+`run_logs` row does.
 
 ### `run_splits`
 

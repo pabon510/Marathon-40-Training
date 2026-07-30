@@ -16,6 +16,13 @@ export interface LogRunFormState {
   tomorrowPreview?: string;
 }
 
+function optionalNumber(formData: FormData, name: string): number | null {
+  const raw = String(formData.get(name) ?? "").trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function logRunAction(_prev: LogRunFormState, formData: FormData): Promise<LogRunFormState> {
   const supabase = await createClient();
   const {
@@ -92,6 +99,39 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
     | "harder";
   const unusualPainFlag = formData.get("unusualPainFlag") === "on";
   const notes = String(formData.get("notes") ?? "");
+  const importId = String(formData.get("importId") ?? "").trim() || null;
+  if (importId) {
+    const { data: importDraft } = await supabase
+      .from("run_imports")
+      .select("id, status")
+      .eq("id", importId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!importDraft || importDraft.status !== "draft") {
+      return { error: "This Garmin import is unavailable or has already been used." };
+    }
+  }
+
+  const importedMetrics = {
+    movingDurationSeconds: optionalNumber(formData, "movingDurationSeconds"),
+    elapsedDurationSeconds: optionalNumber(formData, "elapsedDurationSeconds"),
+    movingPaceSecondsPerMile: optionalNumber(formData, "movingPaceSecondsPerMile"),
+    bestPaceSecondsPerMile: optionalNumber(formData, "bestPaceSecondsPerMile"),
+    elevationLossFeet: optionalNumber(formData, "elevationLossFeet"),
+    aerobicTrainingEffect: optionalNumber(formData, "aerobicTrainingEffect"),
+    anaerobicTrainingEffect: optionalNumber(formData, "anaerobicTrainingEffect"),
+    averageTemperatureF: optionalNumber(formData, "averageTemperatureF"),
+    averageCadenceSpm: optionalNumber(formData, "averageCadenceSpm"),
+    maximumCadenceSpm: optionalNumber(formData, "maximumCadenceSpm"),
+    averageStrideLengthMeters: optionalNumber(formData, "averageStrideLengthMeters"),
+  };
+  if (
+    Object.values(importedMetrics).some((metric) => metric !== null && metric < 0)
+    || (importedMetrics.aerobicTrainingEffect !== null && importedMetrics.aerobicTrainingEffect > 5)
+    || (importedMetrics.anaerobicTrainingEffect !== null && importedMetrics.anaerobicTrainingEffect > 5)
+  ) {
+    return { error: "One or more imported Garmin values is outside the allowed range." };
+  }
 
   try {
     const sessionId = await startWorkoutSession(supabase, user.id, {
@@ -104,7 +144,7 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
       overrideReason: isOverride ? overrideReason : undefined,
     });
 
-    await saveRunLog(supabase, {
+    const runLogId = await saveRunLog(supabase, {
       sessionId,
       runType,
       distanceMiles,
@@ -118,7 +158,36 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
       kneeImmediatelyAfter,
       isStroller,
       strollerDiscomfortAreas,
+      importId,
+      dataSource: importId ? "garmin_screenshot" : "manual",
+      ...(importId ? importedMetrics : {
+        movingDurationSeconds: null,
+        elapsedDurationSeconds: null,
+        movingPaceSecondsPerMile: null,
+        bestPaceSecondsPerMile: null,
+        elevationLossFeet: null,
+        aerobicTrainingEffect: null,
+        anaerobicTrainingEffect: null,
+        averageTemperatureF: null,
+        averageCadenceSpm: null,
+        maximumCadenceSpm: null,
+        averageStrideLengthMeters: null,
+      }),
     });
+
+    if (importId) {
+      const { error: confirmError } = await supabase
+        .from("run_imports")
+        .update({
+          status: "confirmed",
+          run_log_id: runLogId,
+          confirmed_at: new Date().toISOString(),
+        })
+        .eq("id", importId)
+        .eq("user_id", user.id)
+        .eq("status", "draft");
+      if (confirmError) throw confirmError;
+    }
 
     await savePostWorkoutCheckIn(supabase, user.id, {
       sessionId,
