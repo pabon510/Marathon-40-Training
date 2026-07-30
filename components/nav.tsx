@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/today", label: "Today", icon: "☀️" },
   { href: "/plan", label: "Plan", icon: "📅" },
   { href: "/workouts", label: "Workout", icon: "🏋️" },
+  { href: "/library", label: "Library", icon: "📚" },
   { href: "/progress", label: "Progress", icon: "📈" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
 ] as const;
@@ -19,7 +20,7 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-6">
         {LINKS.map((link) => {
           const active = pathname?.startsWith(link.href);
           return (
