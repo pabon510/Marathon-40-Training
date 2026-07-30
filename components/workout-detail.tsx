@@ -2,6 +2,7 @@ import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import type { StrengthSection } from "@/lib/services/workoutDetailService";
 import { LoadGuidance } from "@/components/load-guidance";
 import { LocationToggle } from "@/components/location-toggle";
+import { metricUnit } from "@/domain/content/prescriptionMetric";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -80,7 +81,8 @@ export function WorkoutDetailView({
                     ) : null}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {item.setCount} x {item.repRangeLow}-{item.repRangeHigh} · rest {item.restSeconds}s
+                    {item.setCount} x {item.repRangeLow}-{item.repRangeHigh}{" "}
+                    {metricUnit(item.loadMetadata.prescriptionMetric)} · rest {item.restSeconds}s
                     {item.isOptional ? " · optional" : ""}
                   </p>
                   <div className="mt-2">

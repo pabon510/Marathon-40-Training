@@ -17,6 +17,9 @@ export interface ExerciseExposure {
   bandLevel: BandLevel | null;
   completedSets: number | null;
   representativeReps: number | null;
+  completedSeconds?: number | null;
+  completedDistanceFeet?: number | null;
+  completedSteps?: number | null;
   difficulty: number | null;
   repBasis: RepBasis | null;
   /** Null/undefined is unknown and must not silently qualify progression. */
@@ -102,17 +105,57 @@ function formatReps(reps: number | null, repScope: RepBasis): string {
   return repScope === "per_side" ? `${reps} per side` : `${reps}`;
 }
 
+function completedMetricValue(exposure: ExerciseExposure, metadata: ExerciseLoadMetadata): number | null {
+  switch (metadata.prescriptionMetric) {
+    case "seconds":
+      return exposure.completedSeconds ?? null;
+    case "distance_feet":
+      return exposure.completedDistanceFeet ?? null;
+    case "steps":
+      return exposure.completedSteps ?? null;
+    default:
+      return exposure.representativeReps;
+  }
+}
+
+function formatResult(value: number | null, metadata: ExerciseLoadMetadata, repScope: RepBasis): string {
+  if (metadata.prescriptionMetric === "reps" || metadata.prescriptionMetric === "breaths") {
+    return formatReps(value, repScope);
+  }
+  if (value === null) return `${metadata.prescriptionMetric.replace("_", " ")} not recorded`;
+  const unit =
+    metadata.prescriptionMetric === "seconds"
+      ? "seconds"
+      : metadata.prescriptionMetric === "distance_feet"
+        ? "feet"
+        : "steps";
+  return `${value} ${unit}${repScope === "per_side" ? " per side" : ""}`;
+}
+
 /** The first-session load-selection protocol, phrased for how this exercise is actually loaded. */
 export function firstSessionProtocolFor(
   metadata: ExerciseLoadMetadata,
   prescription: Prescription,
 ): string {
   const reps = repRangeText(prescription.repRangeLow, prescription.repRangeHigh);
-  const tail = `that allows ${reps} controlled reps at difficulty 6 to 7, with approximately 2 to 3 good reps remaining.`;
+  const unit =
+    metadata.prescriptionMetric === "seconds"
+      ? "seconds"
+      : metadata.prescriptionMetric === "distance_feet"
+        ? "feet"
+        : metadata.prescriptionMetric === "steps"
+          ? "steps"
+          : "controlled reps";
+  const tail =
+    metadata.prescriptionMetric === "reps"
+      ? `that allows ${reps} controlled reps at difficulty 6 to 7, with approximately 2 to 3 good reps remaining.`
+      : `that allows ${reps} ${unit} at difficulty 6 to 7 with clean form.`;
   const type = loadedTypeFor(metadata);
 
   if (metadata.defaultLoadType === "bodyweight" && allowsBodyweight(metadata)) {
-    return `Start with bodyweight and complete ${reps} controlled reps at difficulty 6 to 7, with approximately 2 to 3 good reps remaining.`;
+    return metadata.prescriptionMetric === "reps"
+      ? `Start with bodyweight and complete ${reps} controlled reps at difficulty 6 to 7, with approximately 2 to 3 good reps remaining.`
+      : `Start with bodyweight and complete ${reps} ${unit} at difficulty 6 to 7 with clean form.`;
   }
   if (type === "machine") return `Select a starting machine weight ${tail}`;
   if (type === "band") return `Select a band level ${tail}`;
@@ -132,15 +175,17 @@ export const FIRST_SESSION_STEPS: string[] = [
 function toStrengthExposure(
   exposure: ExerciseExposure,
   prescription: Prescription,
+  metadata: ExerciseLoadMetadata,
 ): StrengthExposure {
+  const result = completedMetricValue(exposure, metadata);
   return {
     completedAsPrescribed:
       exposure.completedSets !== null &&
       exposure.completedSets >= prescription.setCount &&
-      exposure.representativeReps !== null &&
-      exposure.representativeReps >= prescription.repRangeLow,
+      result !== null &&
+      result >= prescription.repRangeLow,
     repsAtTopOfRange:
-      exposure.representativeReps !== null && exposure.representativeReps >= prescription.repRangeHigh,
+      result !== null && result >= prescription.repRangeHigh,
     // A missing difficulty is treated as "too uncertain to progress on" —
     // it must not silently read as an easy session.
     difficulty: exposure.difficulty ?? 10,
@@ -198,12 +243,12 @@ export function buildLoadRecommendation(
 
   const previousText = `${formatLoad(last.loadValue, lastLoadType, last.bandLevel, metadata)} for ${
     last.completedSets ?? prescription.setCount
-  } sets of ${formatReps(last.representativeReps, lastRepScope)}${
+  } sets of ${formatResult(completedMetricValue(last, metadata), metadata, lastRepScope)}${
     last.difficulty !== null ? `, difficulty ${last.difficulty}` : ""
   }`;
 
   const progression = evaluateStrengthProgression(
-    history.slice(0, 2).map((e) => toStrengthExposure(e, prescription)),
+    history.slice(0, 2).map((e) => toStrengthExposure(e, prescription, metadata)),
     context.location,
     context.hasHeavierEquipmentAvailable,
   );
@@ -211,7 +256,15 @@ export function buildLoadRecommendation(
   function recommendedTextFor(load: number | null, repsLow: number, repsHigh: number): string {
     const loadPart = formatLoad(load, lastLoadType, last.bandLevel, metadata);
     const perSide = metadata.repScope === "per_side" ? " per side" : "";
-    return `${loadPart} for ${prescription.setCount} sets of ${repRangeText(repsLow, repsHigh)}${perSide}`;
+    const unit =
+      metadata.prescriptionMetric === "seconds"
+        ? " seconds"
+        : metadata.prescriptionMetric === "distance_feet"
+          ? " feet"
+          : metadata.prescriptionMetric === "steps"
+            ? " steps"
+            : "";
+    return `${loadPart} for ${prescription.setCount} sets of ${repRangeText(repsLow, repsHigh)}${unit}${perSide}`;
   }
 
   if (!progression.eligible || progression.method === null) {

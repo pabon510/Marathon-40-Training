@@ -64,6 +64,10 @@ export interface StrengthEntryEditInput {
   strengthLogId: string;
   completedSets: number | null;
   representativeReps: number | null;
+  completedSeconds: number | null;
+  completedDistanceFeet: number | null;
+  completedSteps: number | null;
+  prescriptionMetric: "reps" | "seconds" | "distance_feet" | "steps" | "breaths";
   loadValue: number | null;
   loadType: "weighted" | "bodyweight" | "band" | "machine";
   bandLevel: "light" | "medium" | "heavy" | null;
@@ -256,6 +260,9 @@ export async function updateStrengthSession(
     const loadChanged =
       previous.completed_sets !== entry.completedSets ||
       previous.representative_reps !== entry.representativeReps ||
+      previous.completed_seconds !== entry.completedSeconds ||
+      previous.completed_distance_feet !== entry.completedDistanceFeet ||
+      previous.completed_steps !== entry.completedSteps ||
       previous.load_value !== entry.loadValue ||
       previous.load_type !== entry.loadType ||
       previous.band_level !== entry.bandLevel;
@@ -264,7 +271,15 @@ export async function updateStrengthSession(
     if ((entry.loadType === "weighted" || entry.loadType === "machine") && entry.loadValue === null) {
       skipped.push("load");
     }
-    if (entry.representativeReps === null) skipped.push("reps");
+    const resultMissing =
+      entry.prescriptionMetric === "seconds"
+        ? entry.completedSeconds === null
+        : entry.prescriptionMetric === "distance_feet"
+          ? entry.completedDistanceFeet === null
+          : entry.prescriptionMetric === "steps"
+            ? entry.completedSteps === null
+            : entry.representativeReps === null;
+    if (resultMissing) skipped.push(entry.prescriptionMetric);
     if (entry.difficulty === null) skipped.push("difficulty");
 
     const { error } = await supabase
@@ -272,6 +287,9 @@ export async function updateStrengthSession(
       .update({
         completed_sets: entry.completedSets,
         representative_reps: entry.representativeReps,
+        completed_seconds: entry.completedSeconds,
+        completed_distance_feet: entry.completedDistanceFeet,
+        completed_steps: entry.completedSteps,
         load_value: entry.loadValue,
         load_type: entry.loadType,
         band_level: entry.bandLevel,

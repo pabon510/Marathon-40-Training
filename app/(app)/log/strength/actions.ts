@@ -82,6 +82,12 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
         | "machine";
       const rawLoad = String(formData.get(`load_${i}`) ?? "").trim();
       const rawReps = String(formData.get(`reps_${i}`) ?? "").trim();
+      const metric = String(formData.get(`metric_${i}`) ?? "reps") as
+        | "reps"
+        | "seconds"
+        | "distance_feet"
+        | "steps"
+        | "breaths";
       const rawSets = String(formData.get(`sets_${i}`) ?? "").trim();
       const rawDifficulty = String(formData.get(`difficulty_${i}`) ?? "").trim();
       const rawBand = String(formData.get(`bandLevel_${i}`) ?? "").trim();
@@ -91,7 +97,7 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
       // explicitly confirmed leaving it blank in the UI.
       const skippedFields: string[] = [];
       if ((loadType === "weighted" || loadType === "machine") && rawLoad === "") skippedFields.push("load");
-      if (rawReps === "") skippedFields.push("reps");
+      if (rawReps === "") skippedFields.push(metric);
       if (rawDifficulty === "") skippedFields.push("difficulty");
 
       const loadUnit =
@@ -102,7 +108,10 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
         ordinal: i + 1,
         prescribedVariantId: String(formData.get(`variantId_${i}`) ?? "") || null,
         completedSets: rawSets === "" ? null : Number(rawSets),
-        representativeReps: rawReps === "" ? null : Number(rawReps),
+        representativeReps:
+          rawReps === "" || metric === "seconds" || metric === "distance_feet" || metric === "steps"
+            ? null
+            : Number(rawReps),
         maxReps: null,
         loadValue: rawLoad === "" ? null : Number(rawLoad),
         loadUnit: loadUnit as "lb" | "kg" | "bodyweight" | "band" | "n/a",
@@ -114,6 +123,10 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
         repBasis: (String(formData.get(`repBasis_${i}`) ?? "total") as "total" | "per_side") || "total",
         skippedFields,
         perSetReps: rawPerSet === "" ? [] : rawPerSet.split(",").map((s) => s.trim()),
+        completedSeconds: metric === "seconds" && rawReps !== "" ? Number(rawReps) : null,
+        completedDistanceFeet:
+          metric === "distance_feet" && rawReps !== "" ? Number(rawReps) : null,
+        completedSteps: metric === "steps" && rawReps !== "" ? Number(rawReps) : null,
       };
     });
 

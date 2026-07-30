@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { LoadGuidance } from "@/components/load-guidance";
+import { metricResultLabel, metricUnit } from "@/domain/content/prescriptionMetric";
 
 export type LoadTypeChoice = "weighted" | "bodyweight" | "band" | "machine";
 export type BandLevelChoice = "light" | "medium" | "heavy";
@@ -68,6 +69,7 @@ function loadUnitLabel(loadScope: string): string {
 
 export function summaryText(item: GuidedExerciseItem, entry: ExerciseEntry): string {
   const perSide = item.loadMetadata.repScope === "per_side" ? " per side" : "";
+  const unit = metricUnit(item.loadMetadata.prescriptionMetric);
   const reps = entry.reps === "" ? "—" : entry.reps;
   const sets = entry.sets === "" ? "—" : entry.sets;
   let load: string;
@@ -75,7 +77,7 @@ export function summaryText(item: GuidedExerciseItem, entry: ExerciseEntry): str
   else if (entry.loadType === "band") load = `${entry.bandLevel} band`;
   else load = entry.loadValue === "" ? "load not recorded" : `${entry.loadValue} lb`;
   const difficulty = entry.difficulty === null ? "difficulty not set" : `difficulty ${entry.difficulty}`;
-  return `${sets} × ${reps}${perSide} at ${load}, ${difficulty}`;
+  return `${sets} × ${reps} ${unit}${perSide} at ${load}, ${difficulty}`;
 }
 
 export function ExerciseCard({
@@ -102,6 +104,8 @@ export function ExerciseCard({
   // set" screen, so there's no separate read-only guided-mode pass first.
   const [showContent, setShowContent] = useState(true);
   const perSide = item.loadMetadata.repScope === "per_side";
+  const metric = item.loadMetadata.prescriptionMetric;
+  const unit = metricUnit(metric);
   // Only load types this exercise actually supports: a leg press cannot be
   // logged as bodyweight, a pushup cannot be logged as machine.
   const allowedLoadTypes = item.loadMetadata.allowedLoadTypes;
@@ -133,7 +137,7 @@ export function ExerciseCard({
         <div>
           <p className="text-sm font-semibold text-slate-900">{item.exercise.name}</p>
           <p className="text-xs text-slate-500">
-            Prescribed {item.setCount} × {item.repRangeLow}-{item.repRangeHigh}
+            Prescribed {item.setCount} × {item.repRangeLow}-{item.repRangeHigh} {unit}
             {perSide ? " per side" : ""}
           </p>
         </div>
@@ -264,7 +268,7 @@ export function ExerciseCard({
         </div>
         <div>
           <label htmlFor={`reps_${index}`} className="field-label">
-            Reps {perSide ? "per side" : "per set"}
+            {metricResultLabel(metric, item.loadMetadata.repScope)}
           </label>
           <input
             id={`reps_${index}`}
@@ -277,7 +281,7 @@ export function ExerciseCard({
         </div>
       </div>
 
-      <div>
+      {metric === "reps" ? <div>
         <label className="flex min-h-touch items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -317,7 +321,7 @@ export function ExerciseCard({
             </button>
           </div>
         ) : null}
-      </div>
+      </div> : null}
 
       <div>
         <div className="flex items-baseline justify-between">

@@ -105,7 +105,9 @@ describe("phase-1 V2 metadata foundations", () => {
     for (const exercise of EXERCISES) {
       const metadata = getExerciseMetadataV2(exercise);
       expect(metadata.familySlug.length, exercise.slug).toBeGreaterThan(0);
-      expect(metadata.prescriptionMetric, exercise.slug).toBe("reps");
+      expect(["reps", "seconds", "distance_feet", "steps", "breaths"], exercise.slug).toContain(
+        metadata.prescriptionMetric,
+      );
       expect(metadata.historyCompatibility, exercise.slug).toBe("exact_only");
       expect(metadata.rotationEligible, exercise.slug).toBe(false);
       expect(typeof metadata.activeForNewPlans, exercise.slug).toBe("boolean");
