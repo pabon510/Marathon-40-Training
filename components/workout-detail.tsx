@@ -3,6 +3,7 @@ import type { StrengthSection } from "@/lib/services/workoutDetailService";
 import { LoadGuidance } from "@/components/load-guidance";
 import { LocationToggle } from "@/components/location-toggle";
 import { metricUnit } from "@/domain/content/prescriptionMetric";
+import { selectionReasonLabel } from "@/domain/planning/selectionReason";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -84,6 +85,9 @@ export function WorkoutDetailView({
                     {item.setCount} x {item.repRangeLow}-{item.repRangeHigh}{" "}
                     {metricUnit(item.loadMetadata.prescriptionMetric)} · rest {item.restSeconds}s
                     {item.isOptional ? " · optional" : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-brand-700">
+                    {selectionReasonLabel(item.selectionReasonCode)}
                   </p>
                   <div className="mt-2">
                     <LoadGuidance recommendation={item.recommendation} metadata={item.loadMetadata} />

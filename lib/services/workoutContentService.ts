@@ -7,6 +7,7 @@ import {
   type VariantOption,
 } from "@/domain/planning/locationConversion";
 import type { Location } from "@/domain/types";
+import { strengthSlotKey, trainingBlockWindow } from "@/domain/planning/trainingBlock";
 
 type Client = SupabaseClient<Database>;
 
@@ -20,6 +21,7 @@ export async function resolveStrengthWorkout(
   templateId: string,
   location: Location,
   wantShort: boolean,
+  context?: { userId: string; localDate: string },
 ): Promise<{ template: Database["public"]["Tables"]["strength_templates"]["Row"]; items: ResolvedExerciseItem[] }> {
   const [{ data: template, error: templateError }, { data: itemRows, error: itemsError }] = await Promise.all([
     supabase.from("strength_templates").select("*").eq("id", templateId).single(),
@@ -52,6 +54,7 @@ export async function resolveStrengthWorkout(
       selectionPriority: row.selection_priority,
       activeForNewPlans: row.exercise_definitions.active_for_new_plans,
       safetyEligible: true,
+      rotationEligible: row.rotation_eligible,
     });
     exerciseById.set(row.exercise_id, row.exercise_definitions);
   }
@@ -68,7 +71,68 @@ export async function resolveStrengthWorkout(
     restSeconds: i.rest_seconds,
   }));
 
-  const resolved = buildStrengthWorkout(templateItems, variants, location, wantShort);
+  let block:
+    | { startDate: string; endDate: string; index: number }
+    | null = null;
+  const persistedBySlot = new Map<string, string>();
+
+  if (context) {
+    const { data: earliestPlan } = await supabase
+      .from("plan_versions")
+      .select("rolling_start_date")
+      .eq("user_id", context.userId)
+      .order("rolling_start_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    block = trainingBlockWindow(earliestPlan?.rolling_start_date ?? context.localDate, context.localDate);
+
+    const { data: savedSelections, error: savedError } = await supabase
+      .from("strength_block_selections")
+      .select("*")
+      .eq("user_id", context.userId)
+      .eq("block_start_date", block.startDate)
+      .eq("template_slug", template.slug);
+    if (savedError) throw savedError;
+    for (const selection of savedSelections ?? []) {
+      persistedBySlot.set(selection.slot_key, selection.exercise_variant_id);
+    }
+
+    for (const item of templateItems) {
+      const selectedId = persistedBySlot.get(strengthSlotKey(item.ordinal, location, wantShort));
+      if (!selectedId) continue;
+      const selected = variants.find((variant) => variant.id === selectedId);
+      if (selected) selected.isPersistedSelection = true;
+    }
+  }
+
+  const resolved = buildStrengthWorkout(templateItems, variants, location, wantShort, block?.index ?? 0);
+
+  if (context && block) {
+    const newSelections = resolved
+      .map((item) => {
+        const slotKey = strengthSlotKey(item.ordinal, location, wantShort);
+        if (persistedBySlot.has(slotKey)) return null;
+        return {
+          user_id: context.userId,
+          block_start_date: block!.startDate,
+          block_end_date: block!.endDate,
+          template_slug: template.slug,
+          slot_key: slotKey,
+          exercise_variant_id: item.variant.id,
+          reason_code: item.selectionReasonCode,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+    if (newSelections.length > 0) {
+      const { error: selectionError } = await supabase
+        .from("strength_block_selections")
+        .upsert(newSelections, {
+          onConflict: "user_id,block_start_date,template_slug,slot_key",
+          ignoreDuplicates: true,
+        });
+      if (selectionError) throw selectionError;
+    }
+  }
 
   const items: ResolvedExerciseItem[] = resolved
     .map((r) => {

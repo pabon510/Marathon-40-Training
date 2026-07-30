@@ -109,7 +109,9 @@ describe("phase-1 V2 metadata foundations", () => {
         metadata.prescriptionMetric,
       );
       expect(metadata.historyCompatibility, exercise.slug).toBe("exact_only");
-      expect(metadata.rotationEligible, exercise.slug).toBe(false);
+      if (metadata.rotationEligible) {
+        expect(metadata.programmingRole, exercise.slug).toBe("accessory");
+      }
       expect(typeof metadata.activeForNewPlans, exercise.slug).toBe("boolean");
     }
   });

@@ -56,6 +56,29 @@ describe("resolveVariant", () => {
     expect(resolveVariant(choices, "pull", "gym", false)?.id).toBe("persisted");
   });
 
+  it("rotates only explicitly eligible accessories at a block boundary", () => {
+    const choices: VariantOption[] = [
+      { id: "primary", exerciseId: "primary", location: "gym", equivalenceGroup: "hip", isShortOption: false, selectionPriority: 1 },
+      { id: "cable", exerciseId: "cable", location: "gym", equivalenceGroup: "hip", isShortOption: false, selectionPriority: 10, rotationEligible: true },
+      { id: "machine", exerciseId: "machine", location: "gym", equivalenceGroup: "hip", isShortOption: false, selectionPriority: 20, rotationEligible: true },
+    ];
+    // A non-rotating primary remains the winner; approved accessories do
+    // not displace a primary merely to create novelty.
+    expect(resolveVariant(choices, "hip", "gym", false, 1)?.id).toBe("primary");
+
+    const accessories = choices.slice(1);
+    expect(resolveVariant(accessories, "hip", "gym", false, 0)?.id).toBe("cable");
+    expect(resolveVariant(accessories, "hip", "gym", false, 1)?.id).toBe("machine");
+  });
+
+  it("a persisted selection wins even when its numeric priority is lower", () => {
+    const choices: VariantOption[] = [
+      { id: "new", exerciseId: "new", location: "gym", equivalenceGroup: "hip", isShortOption: false, selectionPriority: 1, rotationEligible: true },
+      { id: "saved", exerciseId: "saved", location: "either", equivalenceGroup: "hip", isShortOption: false, selectionPriority: 99, isPersistedSelection: true, rotationEligible: true },
+    ];
+    expect(resolveVariant(choices, "hip", "gym", false, 3)?.id).toBe("saved");
+  });
+
   it("excludes inactive and safety-ineligible variants", () => {
     const choices: VariantOption[] = [
       { id: "inactive", exerciseId: "inactive", location: "gym", equivalenceGroup: "squat", isShortOption: false, activeForNewPlans: false },
