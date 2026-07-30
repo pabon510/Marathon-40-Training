@@ -9,6 +9,7 @@ import { startWorkoutSession, saveRunLog, savePostWorkoutCheckIn } from "@/lib/s
 import { evaluateDailyAdaptation } from "@/domain/adaptation/evaluate";
 import { todayLocalDate } from "@/lib/date";
 import type { AvailableTime, RunType, WorkoutKind } from "@/domain/types";
+import { isScaleScore } from "@/domain/content/trainingScales";
 
 export interface LogRunFormState {
   error?: string;
@@ -61,8 +62,19 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
     .limit(1)
     .maybeSingle();
 
-  const highestKneeDuring = Number(formData.get("highestKneeDuring") ?? 0);
-  const kneeImmediatelyAfter = Number(formData.get("kneeImmediatelyAfter") ?? 0);
+  const highestKneeDuring = Number(formData.get("highestKneeDuring"));
+  const kneeImmediatelyAfter = Number(formData.get("kneeImmediatelyAfter"));
+  const effort = Number(formData.get("effort"));
+  if (
+    !formData.has("effort")
+    || !formData.has("highestKneeDuring")
+    || !formData.has("kneeImmediatelyAfter")
+    || !isScaleScore(effort, 1, 10)
+    || !isScaleScore(highestKneeDuring, 0, 10)
+    || !isScaleScore(kneeImmediatelyAfter, 0, 10)
+  ) {
+    return { error: "Select overall effort and both knee-discomfort scores before saving." };
+  }
 
   // Server-side hard-block re-check. A crafted request cannot bypass this —
   // it does not depend on what the client claims about overrides.
@@ -105,7 +117,6 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
   const paceOverrideSecondsPerMile = optionalClockSeconds(formData, "paceOverrideMinutes");
   const averageHr = Number(formData.get("averageHr") ?? 0) || null;
   const maximumHr = Number(formData.get("maximumHr") ?? 0) || null;
-  const effort = Number(formData.get("effort") ?? 5);
   const elevationGainFeet = Number(formData.get("elevationGainFeet") ?? 0) || null;
   const completedFull = formData.get("completedFull") === "on";
   const expectationResult = String(formData.get("expectationResult") ?? "as_expected") as

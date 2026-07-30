@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { RedFlagWarning } from "@/components/red-flag-warning";
+import { LabeledScale } from "@/components/labeled-scale";
+import { EFFORT_SCALE, KNEE_SCALE } from "@/domain/content/trainingScales";
 import { logStrengthAction, type LogStrengthFormState } from "./actions";
 import { ExerciseCard, initialEntry, summaryText, type ExerciseEntry } from "./exercise-card";
 import { metricLabel } from "@/domain/content/prescriptionMetric";
@@ -44,6 +46,9 @@ export function StrengthLogForm({
   const [expandedIndex, setExpandedIndex] = useState<number | null>(items.length > 0 ? 0 : null);
   const [unusualPain, setUnusualPain] = useState(false);
   const [missing, setMissing] = useState<MissingField[] | null>(null);
+  const [effort, setEffort] = useState<number | null>(null);
+  const [highestKneeDuring, setHighestKneeDuring] = useState<number | null>(null);
+  const [kneeImmediatelyAfter, setKneeImmediatelyAfter] = useState<number | null>(null);
   const confirmedRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -146,42 +151,9 @@ export function StrengthLogForm({
 
       <div className="card space-y-4">
         <p className="text-sm font-semibold text-slate-900">Post-workout check-in</p>
-        <div>
-          <label htmlFor="effort" className="field-label">
-            Overall effort (1-10)
-          </label>
-          <input id="effort" name="effort" type="range" min={1} max={10} defaultValue={5} className="mt-2 h-11 w-full" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="highestKneeDuring" className="field-label">
-              Highest knee during (0-10)
-            </label>
-            <input
-              id="highestKneeDuring"
-              name="highestKneeDuring"
-              type="range"
-              min={0}
-              max={10}
-              defaultValue={0}
-              className="mt-2 h-11 w-full"
-            />
-          </div>
-          <div>
-            <label htmlFor="kneeImmediatelyAfter" className="field-label">
-              Knee immediately after (0-10)
-            </label>
-            <input
-              id="kneeImmediatelyAfter"
-              name="kneeImmediatelyAfter"
-              type="range"
-              min={0}
-              max={10}
-              defaultValue={0}
-              className="mt-2 h-11 w-full"
-            />
-          </div>
-        </div>
+        <LabeledScale label="Overall effort" name="effort" min={1} max={10} labels={EFFORT_SCALE} value={effort} onChange={setEffort} required />
+        <LabeledScale label="Highest knee discomfort during" name="highestKneeDuring" min={0} max={10} labels={KNEE_SCALE} value={highestKneeDuring} onChange={setHighestKneeDuring} required />
+        <LabeledScale label="Knee discomfort immediately after" name="kneeImmediatelyAfter" min={0} max={10} labels={KNEE_SCALE} value={kneeImmediatelyAfter} onChange={setKneeImmediatelyAfter} required />
         <div>
           <span className="field-label">Result vs expectation</span>
           <div className="mt-2 flex gap-4">

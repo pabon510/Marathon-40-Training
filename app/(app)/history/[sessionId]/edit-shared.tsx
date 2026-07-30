@@ -1,6 +1,8 @@
 "use client";
 
 import type { EditFormState } from "./actions";
+import { LabeledScale } from "@/components/labeled-scale";
+import { EFFORT_SCALE, KNEE_SCALE } from "@/domain/content/trainingScales";
 
 /** Post-workout fields shared by the run and strength edit forms. */
 export function PostWorkoutFields({
@@ -27,51 +29,9 @@ export function PostWorkoutFields({
   void unusualPainFlag;
   return (
     <>
-      <div>
-        <label htmlFor="overallEffort" className="field-label">
-          Overall effort (1-10)
-        </label>
-        <input
-          id="overallEffort"
-          name="overallEffort"
-          type="range"
-          min={1}
-          max={10}
-          defaultValue={overallEffort}
-          className="mt-2 h-11 w-full"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="highestKneeDuring" className="field-label">
-            Highest knee during (0-10)
-          </label>
-          <input
-            id="highestKneeDuring"
-            name="highestKneeDuring"
-            type="range"
-            min={0}
-            max={10}
-            defaultValue={highestKneeDuring}
-            className="mt-2 h-11 w-full"
-          />
-        </div>
-        <div>
-          <label htmlFor="kneeImmediatelyAfter" className="field-label">
-            Knee immediately after (0-10)
-          </label>
-          <input
-            id="kneeImmediatelyAfter"
-            name="kneeImmediatelyAfter"
-            type="range"
-            min={0}
-            max={10}
-            defaultValue={kneeImmediatelyAfter}
-            className="mt-2 h-11 w-full"
-          />
-        </div>
-      </div>
+      <LabeledScale label="Overall effort" name="overallEffort" min={1} max={10} labels={EFFORT_SCALE} defaultValue={overallEffort} required />
+      <LabeledScale label="Highest knee discomfort during" name="highestKneeDuring" min={0} max={10} labels={KNEE_SCALE} defaultValue={highestKneeDuring} required />
+      <LabeledScale label="Knee discomfort immediately after" name="kneeImmediatelyAfter" min={0} max={10} labels={KNEE_SCALE} defaultValue={kneeImmediatelyAfter} required />
 
       <div>
         <label htmlFor="completionState" className="field-label">

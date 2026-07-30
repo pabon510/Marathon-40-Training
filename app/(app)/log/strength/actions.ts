@@ -7,6 +7,7 @@ import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { evaluatePreWorkoutSafety } from "@/domain/safety/hardBlock";
 import { startWorkoutSession, saveStrengthLogEntries, savePostWorkoutCheckIn } from "@/lib/services/loggingService";
 import { todayLocalDate } from "@/lib/date";
+import { isScaleScore } from "@/domain/content/trainingScales";
 
 export interface LogStrengthFormState {
   error?: string;
@@ -53,9 +54,19 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
 
   const plannedWorkout = await getPlannedWorkoutForDate(supabase, user.id, localDate);
   const location = String(formData.get("location") ?? "home") as "gym" | "home";
-  const highestKneeDuring = Number(formData.get("highestKneeDuring") ?? 0);
-  const kneeImmediatelyAfter = Number(formData.get("kneeImmediatelyAfter") ?? 0);
-  const effort = Number(formData.get("effort") ?? 5);
+  const highestKneeDuring = Number(formData.get("highestKneeDuring"));
+  const kneeImmediatelyAfter = Number(formData.get("kneeImmediatelyAfter"));
+  const effort = Number(formData.get("effort"));
+  if (
+    !formData.has("effort")
+    || !formData.has("highestKneeDuring")
+    || !formData.has("kneeImmediatelyAfter")
+    || !isScaleScore(effort, 1, 10)
+    || !isScaleScore(highestKneeDuring, 0, 10)
+    || !isScaleScore(kneeImmediatelyAfter, 0, 10)
+  ) {
+    return { error: "Select overall effort and both knee-discomfort scores before saving." };
+  }
   const completedFull = formData.get("completedFull") === "on";
   const expectationResult = String(formData.get("expectationResult") ?? "as_expected") as
     | "easier"
