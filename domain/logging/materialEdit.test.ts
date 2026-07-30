@@ -15,6 +15,7 @@ function snapshot(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
     kneeImmediatelyAfter: 1,
     completedFull: true,
     runType: "outdoor",
+    isStroller: false,
     distanceMiles: 3.5,
     durationSeconds: 1800,
     strengthLoadSignature: null,
@@ -66,6 +67,7 @@ describe("detectMaterialChanges", () => {
   it("changing workout classification is material", () => {
     expect(detectMaterialChanges(snapshot(), snapshot({ sessionType: "strength" })).isMaterial).toBe(true);
     expect(detectMaterialChanges(snapshot(), snapshot({ runType: "treadmill" })).isMaterial).toBe(true);
+    expect(detectMaterialChanges(snapshot(), snapshot({ isStroller: true })).isMaterial).toBe(true);
   });
 
   it("changing strength load is material", () => {

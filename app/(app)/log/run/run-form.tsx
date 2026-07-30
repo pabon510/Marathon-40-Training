@@ -7,10 +7,18 @@ import { logRunAction, type LogRunFormState } from "./actions";
 
 const initialState: LogRunFormState = {};
 
-export function RunLogForm() {
+export function RunLogForm({
+  defaultStroller,
+  strollerAllowed,
+}: {
+  defaultStroller: boolean;
+  strollerAllowed: boolean;
+}) {
   const [state, formAction, pending] = useActionState(logRunAction, initialState);
   const [isOverride, setIsOverride] = useState(false);
   const [unusualPain, setUnusualPain] = useState(false);
+  const [isStroller, setIsStroller] = useState(defaultStroller && strollerAllowed);
+  const [runType, setRunType] = useState<"outdoor" | "treadmill" | "run_walk">("outdoor");
 
   if (state.success) {
     return (
@@ -31,11 +39,41 @@ export function RunLogForm() {
         <div className="mt-2 flex gap-4">
           {(["outdoor", "treadmill", "run_walk"] as const).map((t) => (
             <label key={t} className="flex items-center gap-2 text-sm capitalize">
-              <input type="radio" name="runType" value={t} defaultChecked={t === "outdoor"} />
+              <input
+                type="radio"
+                name="runType"
+                value={t}
+                checked={runType === t}
+                onChange={() => {
+                  setRunType(t);
+                  if (t === "treadmill") setIsStroller(false);
+                }}
+              />
               {t.replace("_", "-")}
             </label>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 p-3">
+        <label className="flex min-h-touch items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="isStroller"
+            checked={isStroller}
+            disabled={!strollerAllowed}
+            onChange={(event) => {
+              setIsStroller(event.target.checked);
+              if (event.target.checked && runType === "treadmill") setRunType("outdoor");
+            }}
+          />
+          Jogging-stroller run
+        </label>
+        <p className="mt-1 text-xs text-slate-500">
+          {strollerAllowed
+            ? "Counts fully toward time, mileage, and consistency. Pace is compared only with other stroller runs."
+            : "Stroller context is available only for easy and long runs."}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -155,6 +193,25 @@ export function RunLogForm() {
         Unusual pain (not the usual knee-discomfort tracking)
       </label>
       {unusualPain ? <RedFlagWarning /> : null}
+
+      {isStroller ? (
+        <fieldset>
+          <legend className="field-label">Did pushing the stroller cause unusual discomfort? (optional)</legend>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {[
+              ["knee", "Knee"],
+              ["back", "Back"],
+              ["shoulder_arm", "Shoulder/arm"],
+              ["other", "Other"],
+            ].map(([value, label]) => (
+              <label key={value} className="flex min-h-touch items-center gap-2 text-sm">
+                <input type="checkbox" name="strollerDiscomfortAreas" value={value} />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
 
       <label className="flex min-h-touch items-center gap-2 text-sm">
         <input type="checkbox" name="unplanned" />

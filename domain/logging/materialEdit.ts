@@ -15,6 +15,7 @@ export interface SessionSnapshot {
   completedFull: boolean | null;
   /** Run fields — absent/null for strength sessions. */
   runType: string | null;
+  isStroller: boolean | null;
   distanceMiles: number | null;
   durationSeconds: number | null;
   /**
@@ -36,6 +37,7 @@ export const MATERIAL_FIELDS = [
   "kneeImmediatelyAfter",
   "completedFull",
   "runType",
+  "isStroller",
   "distanceMiles",
   "durationSeconds",
   "strengthLoadSignature",
@@ -51,6 +53,7 @@ const FIELD_LABELS: Record<MaterialField, string> = {
   kneeImmediatelyAfter: "knee discomfort after",
   completedFull: "completed in full",
   runType: "run environment",
+  isStroller: "stroller context",
   distanceMiles: "distance",
   durationSeconds: "duration",
   strengthLoadSignature: "strength load",

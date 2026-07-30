@@ -59,6 +59,23 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
   }
 
   const runType = String(formData.get("runType") ?? "outdoor") as RunType;
+  const isStroller = formData.get("isStroller") === "on";
+  if (isStroller && runType === "treadmill") {
+    return { error: "A jogging-stroller run must use the outdoor or run-walk environment." };
+  }
+  if (
+    isStroller
+    && plannedWorkout
+    && !["easy_run", "long_run"].includes(plannedWorkout.workout_kind)
+    && !isUnplanned
+  ) {
+    return { error: "Jogging-stroller runs can only complete easy or long run workouts." };
+  }
+  const allowedStrollerAreas = new Set(["knee", "back", "shoulder_arm", "other"]);
+  const strollerDiscomfortAreas = formData
+    .getAll("strollerDiscomfortAreas")
+    .map(String)
+    .filter((area) => allowedStrollerAreas.has(area));
   const distanceMiles = Number(formData.get("distanceMiles") ?? 0) || null;
   const durationMinutes = Number(formData.get("durationMinutes") ?? 0);
   const durationSeconds = durationMinutes ? durationMinutes * 60 : null;
@@ -99,6 +116,8 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
       elevationGainFeet,
       highestKneeDuring,
       kneeImmediatelyAfter,
+      isStroller,
+      strollerDiscomfortAreas,
     });
 
     await savePostWorkoutCheckIn(supabase, user.id, {

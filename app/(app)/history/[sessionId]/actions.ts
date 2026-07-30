@@ -32,10 +32,19 @@ export async function saveRunEdit(_prev: EditFormState, formData: FormData): Pro
   const durationMinutes = optionalNumber(formData.get("durationMinutes"));
   const paceOverrideMinutes = optionalNumber(formData.get("paceOverrideMinutes"));
   const completionState = String(formData.get("completionState") ?? "full") as CompletionState;
+  const isStroller = formData.get("isStroller") === "on";
+  const runType = String(formData.get("runType") ?? "outdoor") as RunType;
+  if (isStroller && runType === "treadmill") {
+    return { error: "A jogging-stroller run must use the outdoor or run-walk environment." };
+  }
 
   try {
     const change = await updateRunSession(supabase, user.id, sessionId, {
-      runType: String(formData.get("runType") ?? "outdoor") as RunType,
+      runType,
+      isStroller,
+      strollerDiscomfortAreas: isStroller
+        ? formData.getAll("strollerDiscomfortAreas").map(String)
+        : [],
       distanceMiles: optionalNumber(formData.get("distanceMiles")),
       durationSeconds: durationMinutes === null ? null : Math.round(durationMinutes * 60),
       paceOverrideSecondsPerMile: paceOverrideMinutes === null ? null : Math.round(paceOverrideMinutes * 60),

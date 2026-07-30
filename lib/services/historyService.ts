@@ -18,6 +18,7 @@ export interface SessionListItem {
 function runSummary(log: RunLogRow | undefined): string {
   if (!log) return "Run (no details recorded)";
   const parts: string[] = [];
+  if (log.is_stroller) parts.push("Stroller");
   if (log.distance_miles !== null) parts.push(`${log.distance_miles} mi`);
   if (log.duration_seconds !== null) parts.push(`${Math.round(log.duration_seconds / 60)} min`);
   if (log.average_hr !== null) parts.push(`${log.average_hr} bpm avg`);

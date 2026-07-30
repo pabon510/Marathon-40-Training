@@ -5,6 +5,7 @@ export interface ComparableRunCandidate {
   localDate: string;
   isThreshold: boolean;
   runType: RunType;
+  isStroller: boolean;
   durationSeconds: number;
   paceSecondsPerMile: number;
   averageHr: number | null;
@@ -38,6 +39,7 @@ function isComparable(a: ComparableRunCandidate, b: ComparableRunCandidate): boo
     !a.isThreshold &&
     !b.isThreshold &&
     a.runType === b.runType &&
+    a.isStroller === b.isStroller &&
     Math.abs(a.durationSeconds - b.durationSeconds) <= DURATION_TOLERANCE_SECONDS
   );
 }
@@ -79,7 +81,7 @@ function compareTwoRuns(
 /**
  * Finds the most recent comparable pair for the "running is getting
  * easier" trend: takes the latest non-threshold run and searches backward
- * for the nearest earlier run of the same environment (outdoor/treadmill)
+ * for the nearest earlier run of the same environment and stroller context
  * within the duration tolerance. Threshold runs are excluded entirely —
  * they are evaluated separately, never mixed into this comparison.
  */

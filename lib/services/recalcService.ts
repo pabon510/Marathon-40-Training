@@ -99,6 +99,9 @@ export async function applyDailyRecalculation(supabase: Client, userId: string, 
       run_prescription: input.newRunPrescription as unknown as Json,
       strength_template_id: previous.strength_template_id,
       location_choice: input.newLocationChoice ?? previous.location_choice ?? "unspecified",
+      run_context: ["easy_run", "long_run"].includes(input.newWorkoutKind)
+        ? previous.run_context
+        : "standard",
       original_workout_id: previous.id,
     })
     .select("id")
