@@ -24,13 +24,23 @@ export async function resolveWorkoutStrengthSection(
   supabase: Client,
   userId: string,
   profile: Pick<ProfileRow, "equipment">,
-  workout: { strength_template_id: string | null; planned_duration_minutes: number },
+  workout: {
+    strength_template_id: string | null;
+    planned_duration_minutes: number;
+    local_date: string;
+  },
   location: Location,
 ): Promise<StrengthSection | null> {
   if (!workout.strength_template_id) return null;
 
   const wantShort = workout.planned_duration_minutes < 40;
-  const { template, items } = await resolveStrengthWorkout(supabase, workout.strength_template_id, location, wantShort);
+  const { template, items } = await resolveStrengthWorkout(
+    supabase,
+    workout.strength_template_id,
+    location,
+    wantShort,
+    { userId, localDate: workout.local_date },
+  );
   const guidedItems = await attachLoadGuidance(supabase, userId, profile, items, location);
 
   return { templateName: template.name, templateGoal: template.goal, items: guidedItems };

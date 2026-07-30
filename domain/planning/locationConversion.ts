@@ -12,13 +12,14 @@ export interface VariantOption {
   safetyEligible?: boolean;
   isPersistedSelection?: boolean;
   hasCompatibleHistory?: boolean;
+  rotationEligible?: boolean;
 }
 
 function compareVariants(a: VariantOption, b: VariantOption, location: Location, wantShort: boolean): number {
   const booleans: Array<[boolean, boolean]> = [
     [wantShort ? a.isShortOption : !a.isShortOption, wantShort ? b.isShortOption : !b.isShortOption],
-    [a.location === location, b.location === location],
     [a.isPersistedSelection === true, b.isPersistedSelection === true],
+    [a.location === location, b.location === location],
     [a.hasCompatibleHistory === true, b.hasCompatibleHistory === true],
   ];
   for (const [aWins, bWins] of booleans) {
@@ -41,6 +42,7 @@ export function resolveVariant(
   equivalenceGroup: string,
   location: Location,
   wantShort: boolean,
+  rotationIndex = 0,
 ): VariantOption | null {
   const inGroup = variants.filter(
     (v) =>
@@ -50,7 +52,24 @@ export function resolveVariant(
       v.safetyEligible !== false,
   );
   if (inGroup.length === 0) return null;
-  return [...inGroup].sort((a, b) => compareVariants(a, b, location, wantShort))[0]!;
+  const ordered = [...inGroup].sort((a, b) => compareVariants(a, b, location, wantShort));
+  const persisted = ordered.find((variant) => variant.isPersistedSelection);
+  if (persisted) return persisted;
+
+  // Rotation is deliberately limited to explicitly approved accessories.
+  // Preserve the preferred short/full and exact-location characteristics of
+  // the highest-ranked option so variety can never change workout intent.
+  const best = ordered[0]!;
+  const rotating = ordered.filter(
+    (variant) =>
+      variant.rotationEligible === true &&
+      variant.isShortOption === best.isShortOption &&
+      (variant.location === location) === (best.location === location),
+  );
+  if (best.rotationEligible === true && rotating.length > 1) {
+    return rotating[rotationIndex % rotating.length]!;
+  }
+  return best;
 }
 
 export interface TemplateItem {
@@ -83,7 +102,15 @@ export interface ResolvedWorkoutItem {
   restSeconds: number;
   isOptional: boolean;
   isFinisher: boolean;
+  selectionReasonCode: SelectionReasonCode;
 }
+
+export type SelectionReasonCode =
+  | "block_consistency"
+  | "accessory_rotation"
+  | "short_option"
+  | "location_equivalent"
+  | "default_selection";
 
 /**
  * Builds the concrete, location-aware strength workout from a template.
@@ -96,12 +123,30 @@ export function buildStrengthWorkout(
   variants: VariantOption[],
   location: Location,
   wantShort: boolean,
+  rotationIndex = 0,
 ): ResolvedWorkoutItem[] {
   const selectedItems = selectTemplateItemsForVersion(items, wantShort);
   const resolved: ResolvedWorkoutItem[] = [];
   for (const item of selectedItems) {
-    const variant = resolveVariant(variants, item.equivalenceGroup, location, wantShort);
+    const candidates = variants.filter(
+      (candidate) =>
+        candidate.equivalenceGroup === item.equivalenceGroup &&
+        (candidate.location === location || candidate.location === "either") &&
+        candidate.activeForNewPlans !== false &&
+        candidate.safetyEligible !== false,
+    );
+    const variant = resolveVariant(variants, item.equivalenceGroup, location, wantShort, rotationIndex);
     if (!variant) continue;
+    const rotationCandidates = candidates.filter((candidate) => candidate.rotationEligible);
+    const selectionReasonCode: SelectionReasonCode = variant.isPersistedSelection
+      ? "block_consistency"
+      : variant.rotationEligible === true && rotationCandidates.length > 1
+        ? "accessory_rotation"
+        : wantShort && variant.isShortOption
+          ? "short_option"
+          : variant.location === location
+            ? "location_equivalent"
+            : "default_selection";
     resolved.push({
       ordinal: item.ordinal,
       variant,
@@ -111,6 +156,7 @@ export function buildStrengthWorkout(
       restSeconds: item.restSeconds,
       isOptional: item.isOptional,
       isFinisher: item.isFinisher,
+      selectionReasonCode,
     });
   }
   return resolved;

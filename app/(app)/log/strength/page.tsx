@@ -22,7 +22,13 @@ export default async function LogStrengthPage() {
   const location = workout?.location_choice === "gym" ? "gym" : "home";
   if (workout?.strength_template_id) {
     const wantShort = workout.planned_duration_minutes < 40;
-    const resolved = await resolveStrengthWorkout(supabase, workout.strength_template_id, location, wantShort);
+    const resolved = await resolveStrengthWorkout(
+      supabase,
+      workout.strength_template_id,
+      location,
+      wantShort,
+      { userId: user!.id, localDate },
+    );
     items = await attachLoadGuidance(supabase, user!.id, profile, resolved.items, location);
   }
 

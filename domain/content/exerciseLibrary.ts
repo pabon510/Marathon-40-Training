@@ -1106,12 +1106,13 @@ export const EXERCISES: ExerciseContent[] = [
     loadIncrementLb: 5,
     metadataV2: {
       familySlug: "standing_hip_abduction",
-      programmingRole: "primary",
+      programmingRole: "accessory",
       selectionPriority: 10,
+      rotationEligible: true,
       substitutionExerciseSlugs: ["hip_abduction_machine", "band_lateral_walk", "clamshell"],
     },
     variants: [
-      { location: "gym", equivalenceGroup: "hip_abductors", equipmentRequirements: ["low cable", "ankle cuff"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee", "hip"], isShortOption: false, selectionPriority: 10, programmingRole: "primary", rotationEligible: false },
+      { location: "gym", equivalenceGroup: "hip_abductors", equipmentRequirements: ["low cable", "ankle cuff"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee", "hip"], isShortOption: false, selectionPriority: 10, programmingRole: "accessory", rotationEligible: true },
     ],
   },
   {
@@ -1136,12 +1137,13 @@ export const EXERCISES: ExerciseContent[] = [
     loadIncrementLb: 5,
     metadataV2: {
       familySlug: "machine_hip_abduction",
-      programmingRole: "secondary",
+      programmingRole: "accessory",
       selectionPriority: 20,
+      rotationEligible: true,
       substitutionExerciseSlugs: ["standing_cable_hip_abduction", "band_lateral_walk", "clamshell"],
     },
     variants: [
-      { location: "gym", equivalenceGroup: "hip_abductors", equipmentRequirements: ["hip abduction machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee", "hip"], isShortOption: false, selectionPriority: 20, programmingRole: "secondary", rotationEligible: false },
+      { location: "gym", equivalenceGroup: "hip_abductors", equipmentRequirements: ["hip abduction machine"], progressionMethods: ["reps", "load"], contraindicationTags: ["knee", "hip"], isShortOption: false, selectionPriority: 20, programmingRole: "accessory", rotationEligible: true },
     ],
   },
   {

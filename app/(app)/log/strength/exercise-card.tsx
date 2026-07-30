@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { LoadGuidance } from "@/components/load-guidance";
 import { metricResultLabel, metricUnit } from "@/domain/content/prescriptionMetric";
+import { selectionReasonLabel } from "@/domain/planning/selectionReason";
 
 export type LoadTypeChoice = "weighted" | "bodyweight" | "band" | "machine";
 export type BandLevelChoice = "light" | "medium" | "heavy";
@@ -139,6 +140,9 @@ export function ExerciseCard({
           <p className="text-xs text-slate-500">
             Prescribed {item.setCount} × {item.repRangeLow}-{item.repRangeHigh} {unit}
             {perSide ? " per side" : ""}
+          </p>
+          <p className="mt-1 text-xs text-brand-700">
+            {selectionReasonLabel(item.selectionReasonCode)}
           </p>
         </div>
         <span className="shrink-0 text-xs text-slate-400">
