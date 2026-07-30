@@ -34,8 +34,12 @@ describe("Garmin screenshot extraction", () => {
 
     const values = extractionToFormValues(extraction);
     expect(values.distanceMiles).toBe("3.25");
-    expect(values.durationMinutes).toBe("35.03");
-    expect(values.paceOverrideMinutes).toBe("10.53");
+    expect(values.durationMinutes).toBe("35:02");
+    expect(values.paceOverrideMinutes).toBe("10:32");
+    expect(values.movingDurationSeconds).toBe("34:29");
+    expect(values.elapsedDurationSeconds).toBe("35:51");
+    expect(values.movingPaceSecondsPerMile).toBe("10:22");
+    expect(values.bestPaceSecondsPerMile).toBe("8:56");
     expect(values.averageHr).toBe("146");
     expect(values.averageStrideLengthMeters).toBe("1.38");
   });

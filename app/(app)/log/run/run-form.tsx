@@ -122,22 +122,22 @@ export function RunLogForm({
         </div>
         <div>
           <label htmlFor="durationMinutes" className="field-label">
-            Duration (minutes)
+            Duration (M:SS)
           </label>
-          <input id="durationMinutes" name="durationMinutes" type="number" step="0.01" inputMode="decimal" className="text-input" value={values.durationMinutes} onChange={(e) => setValue("durationMinutes", e.target.value)} />
+          <input id="durationMinutes" name="durationMinutes" type="text" inputMode="numeric" placeholder="35:02" className="text-input" value={values.durationMinutes} onChange={(e) => setValue("durationMinutes", e.target.value)} />
         </div>
       </div>
 
       <div>
         <label htmlFor="paceOverrideMinutes" className="field-label">
-          Pace override (min/mile, optional)
+          Pace override (M:SS/mi, optional)
         </label>
         <input
           id="paceOverrideMinutes"
           name="paceOverrideMinutes"
-          type="number"
-          step="0.01"
-          inputMode="decimal"
+          type="text"
+          inputMode="numeric"
+          placeholder="10:32"
           className="text-input"
           value={values.paceOverrideMinutes}
           onChange={(e) => setValue("paceOverrideMinutes", e.target.value)}
@@ -173,10 +173,10 @@ export function RunLogForm({
           <p className="mt-1 text-xs text-slate-500">Optional extracted values. Correct or clear any field.</p>
           <div className="mt-3 grid grid-cols-2 gap-3">
             {([
-              ["movingDurationSeconds", "Moving time (seconds)", "1"],
-              ["elapsedDurationSeconds", "Elapsed time (seconds)", "1"],
-              ["movingPaceSecondsPerMile", "Moving pace (sec/mi)", "0.01"],
-              ["bestPaceSecondsPerMile", "Best pace (sec/mi)", "0.01"],
+              ["movingDurationSeconds", "Moving time (M:SS)", "clock"],
+              ["elapsedDurationSeconds", "Elapsed time (M:SS)", "clock"],
+              ["movingPaceSecondsPerMile", "Moving pace (M:SS/mi)", "clock"],
+              ["bestPaceSecondsPerMile", "Best pace (M:SS/mi)", "clock"],
               ["elevationLossFeet", "Elevation loss (ft)", "0.01"],
               ["aerobicTrainingEffect", "Aerobic effect", "0.1"],
               ["anaerobicTrainingEffect", "Anaerobic effect", "0.1"],
@@ -190,10 +190,10 @@ export function RunLogForm({
                 <input
                   id={name}
                   name={name}
-                  type="number"
-                  min="0"
-                  step={step}
-                  inputMode="decimal"
+                  type={step === "clock" ? "text" : "number"}
+                  min={step === "clock" ? undefined : "0"}
+                  step={step === "clock" ? undefined : step}
+                  inputMode={step === "clock" ? "numeric" : "decimal"}
                   className="text-input"
                   value={values[name]}
                   onChange={(event) => setValue(name, event.target.value)}

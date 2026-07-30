@@ -23,6 +23,23 @@ function optionalNumber(formData: FormData, name: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function optionalClockSeconds(formData: FormData, name: string): number | null {
+  const raw = String(formData.get(name) ?? "").trim();
+  if (!raw) return null;
+  if (!raw.includes(":")) {
+    const decimalMinutes = Number(raw);
+    return Number.isFinite(decimalMinutes) && decimalMinutes >= 0 ? decimalMinutes * 60 : null;
+  }
+  const parts = raw.split(":");
+  if (parts.length !== 2) return null;
+  const minutes = Number(parts[0]);
+  const seconds = Number(parts[1]);
+  if (!Number.isInteger(minutes) || !Number.isInteger(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
+    return null;
+  }
+  return minutes * 60 + seconds;
+}
+
 export async function logRunAction(_prev: LogRunFormState, formData: FormData): Promise<LogRunFormState> {
   const supabase = await createClient();
   const {
@@ -84,10 +101,8 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
     .map(String)
     .filter((area) => allowedStrollerAreas.has(area));
   const distanceMiles = Number(formData.get("distanceMiles") ?? 0) || null;
-  const durationMinutes = Number(formData.get("durationMinutes") ?? 0);
-  const durationSeconds = durationMinutes ? durationMinutes * 60 : null;
-  const paceOverrideRaw = String(formData.get("paceOverrideMinutes") ?? "");
-  const paceOverrideSecondsPerMile = paceOverrideRaw ? Number(paceOverrideRaw) * 60 : null;
+  const durationSeconds = optionalClockSeconds(formData, "durationMinutes");
+  const paceOverrideSecondsPerMile = optionalClockSeconds(formData, "paceOverrideMinutes");
   const averageHr = Number(formData.get("averageHr") ?? 0) || null;
   const maximumHr = Number(formData.get("maximumHr") ?? 0) || null;
   const effort = Number(formData.get("effort") ?? 5);
@@ -113,10 +128,10 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
   }
 
   const importedMetrics = {
-    movingDurationSeconds: optionalNumber(formData, "movingDurationSeconds"),
-    elapsedDurationSeconds: optionalNumber(formData, "elapsedDurationSeconds"),
-    movingPaceSecondsPerMile: optionalNumber(formData, "movingPaceSecondsPerMile"),
-    bestPaceSecondsPerMile: optionalNumber(formData, "bestPaceSecondsPerMile"),
+    movingDurationSeconds: optionalClockSeconds(formData, "movingDurationSeconds"),
+    elapsedDurationSeconds: optionalClockSeconds(formData, "elapsedDurationSeconds"),
+    movingPaceSecondsPerMile: optionalClockSeconds(formData, "movingPaceSecondsPerMile"),
+    bestPaceSecondsPerMile: optionalClockSeconds(formData, "bestPaceSecondsPerMile"),
     elevationLossFeet: optionalNumber(formData, "elevationLossFeet"),
     aerobicTrainingEffect: optionalNumber(formData, "aerobicTrainingEffect"),
     anaerobicTrainingEffect: optionalNumber(formData, "anaerobicTrainingEffect"),

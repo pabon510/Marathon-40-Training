@@ -23,21 +23,27 @@ export interface GarminFormValues {
 const value = (field: { value: number | null }) =>
   field.value === null ? "" : String(field.value);
 
-const minutes = (field: { value: number | null }) =>
-  field.value === null ? "" : String(Math.round((field.value / 60) * 100) / 100);
+export function formatSecondsAsClock(seconds: number | null): string {
+  if (seconds === null || !Number.isFinite(seconds)) return "";
+  const rounded = Math.round(seconds);
+  const minutes = Math.floor(rounded / 60);
+  return `${minutes}:${String(rounded % 60).padStart(2, "0")}`;
+}
+
+const clock = (field: { value: number | null }) => formatSecondsAsClock(field.value);
 
 export function extractionToFormValues(extraction: GarminExtraction): GarminFormValues {
   return {
     distanceMiles: value(extraction.distanceMiles),
-    durationMinutes: minutes(extraction.totalDurationSeconds),
-    paceOverrideMinutes: minutes(extraction.averagePaceSecondsPerMile),
+    durationMinutes: clock(extraction.totalDurationSeconds),
+    paceOverrideMinutes: clock(extraction.averagePaceSecondsPerMile),
     averageHr: value(extraction.averageHeartRate),
     maximumHr: value(extraction.maximumHeartRate),
     elevationGainFeet: value(extraction.elevationGainFeet),
-    movingDurationSeconds: value(extraction.movingDurationSeconds),
-    elapsedDurationSeconds: value(extraction.elapsedDurationSeconds),
-    movingPaceSecondsPerMile: value(extraction.movingPaceSecondsPerMile),
-    bestPaceSecondsPerMile: value(extraction.bestPaceSecondsPerMile),
+    movingDurationSeconds: clock(extraction.movingDurationSeconds),
+    elapsedDurationSeconds: clock(extraction.elapsedDurationSeconds),
+    movingPaceSecondsPerMile: clock(extraction.movingPaceSecondsPerMile),
+    bestPaceSecondsPerMile: clock(extraction.bestPaceSecondsPerMile),
     elevationLossFeet: value(extraction.elevationLossFeet),
     aerobicTrainingEffect: value(extraction.aerobicTrainingEffect),
     anaerobicTrainingEffect: value(extraction.anaerobicTrainingEffect),
