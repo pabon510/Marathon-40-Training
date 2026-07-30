@@ -4,6 +4,7 @@ import type { ProfileRow } from "@/lib/supabase/types";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import { generateWeeklyShape, type WeeklyShapeDay } from "@/domain/planning/weeklyShape";
 import { addDays, mondayOfWeek, nextWeekday } from "@/lib/date";
+import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
 
 type Client = SupabaseClient<Database>;
 
@@ -92,6 +93,7 @@ const GOALS: Record<WorkoutKind, string> = {
   strength_full: "Full-body strength for a compressed 3-day week.",
   combined_short: "Short easy run plus a few high-value strength movements.",
   upper_core_safety: "Upper-body and core work that excludes loaded lower-body movement.",
+  active_recovery: "Gentle at-home mobility to support recovery without adding training load.",
   rest: "Rest day.",
   custom: "Custom entry.",
 };
@@ -153,6 +155,9 @@ export async function generateWeekFromSetup(
 
   const isCalibration = setup.week_start_date <= calibrationEndDate;
   const shape = generateWeeklyShape(setup.available_dates, setup.intended_long_run_date, Math.max(1, weekNumber));
+  const recoveryChoices = Array.isArray(setup.active_recovery_choices)
+    ? setup.active_recovery_choices as unknown as { localDate: string; routineSlug: string }[]
+    : [];
 
   const { data: latestVersion } = await supabase
     .from("plan_versions")
@@ -201,6 +206,26 @@ export async function generateWeekFromSetup(
       strength_template_id: templateId,
       location_choice: "unspecified" as const,
       run_context: "standard" as const,
+      recovery_routine_slug: null,
+    });
+  }
+  for (const choice of recoveryChoices) {
+    const routine = getRecoveryRoutine(choice.routineSlug);
+    if (!routine || shape.some((day) => day.localDate === choice.localDate)) continue;
+    rows.push({
+      plan_version_id: planVersion.id,
+      user_id: userId,
+      local_date: choice.localDate,
+      workout_kind: "active_recovery",
+      priority: 99,
+      status: "provisional" as const,
+      goal: routine.description,
+      planned_duration_minutes: routine.durationMinutes,
+      run_prescription: null,
+      strength_template_id: null,
+      location_choice: "home" as const,
+      run_context: "standard" as const,
+      recovery_routine_slug: routine.slug,
     });
   }
 
@@ -230,6 +255,7 @@ export interface SubmitWeeklySetupInput {
   availableDates: string[];
   intendedLongRunDate: string;
   backupLongRunDate: string;
+  activeRecoveryChoices: { localDate: string; routineSlug: string }[];
 }
 
 export async function submitWeeklySetup(supabase: Client, userId: string, input: SubmitWeeklySetupInput) {
@@ -242,6 +268,7 @@ export async function submitWeeklySetup(supabase: Client, userId: string, input:
         available_dates: input.availableDates,
         intended_long_run_date: input.intendedLongRunDate,
         backup_long_run_date: input.backupLongRunDate,
+        active_recovery_choices: input.activeRecoveryChoices as unknown as Database["public"]["Tables"]["weekly_setups"]["Insert"]["active_recovery_choices"],
         submitted_at: new Date().toISOString(),
       },
       { onConflict: "user_id,week_start_date" },

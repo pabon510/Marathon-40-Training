@@ -5,6 +5,18 @@ import { getOrCreateWeeklySetup, suggestedNextWeekStart } from "@/lib/services/p
 import { todayLocalDate, addDays } from "@/lib/date";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import { WeeklySetupForm } from "./setup-form";
+import type { Json } from "@/lib/supabase/types";
+
+function parseRecoveryChoices(value: Json): { localDate: string; routineSlug: string }[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is { localDate: string; routineSlug: string } =>
+      typeof item === "object"
+      && item !== null
+      && typeof (item as Record<string, unknown>).localDate === "string"
+      && typeof (item as Record<string, unknown>).routineSlug === "string",
+  );
+}
 
 export default async function PlanSetupPage() {
   const supabase = await createClient();
@@ -45,7 +57,8 @@ export default async function PlanSetupPage() {
             ? {
                 availableDates: existing.available_dates,
                 intendedLongRunDate: existing.intended_long_run_date,
-                backupLongRunDate: existing.backup_long_run_date,
+              backupLongRunDate: existing.backup_long_run_date,
+              activeRecoveryChoices: parseRecoveryChoices(existing.active_recovery_choices),
               }
             : null
         }

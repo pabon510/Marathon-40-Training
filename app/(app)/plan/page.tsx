@@ -20,6 +20,7 @@ const KIND_STYLE: Record<string, { icon: string; accent: string; soft: string; l
   strength_full: { icon: "🏋️", accent: "border-orange-500", soft: "bg-orange-50", label: "Full-body strength" },
   combined_short: { icon: "🔁", accent: "border-cyan-500", soft: "bg-cyan-50", label: "Run + strength" },
   upper_core_safety: { icon: "🛡️", accent: "border-emerald-500", soft: "bg-emerald-50", label: "Upper body + core" },
+  active_recovery: { icon: "🧘", accent: "border-teal-500", soft: "bg-teal-50", label: "Active recovery" },
   custom: { icon: "✨", accent: "border-slate-500", soft: "bg-slate-50", label: "Custom workout" },
 };
 
@@ -207,7 +208,8 @@ export default async function PlanPage() {
   const runCount = workouts.filter((workout) => RUN_KINDS.has(workout.workout_kind)).length;
   const strengthCount = workouts.filter((workout) => STRENGTH_KINDS.has(workout.workout_kind)).length;
   const combinedCount = workouts.filter((workout) => workout.workout_kind === "combined_short").length;
-  const recoveryDays = Math.max(0, 7 - workouts.length);
+  const activeRecoveryCount = workouts.filter((workout) => workout.workout_kind === "active_recovery").length;
+  const restDays = Math.max(0, 7 - workouts.length);
   const totalMinutes = workouts.reduce((sum, workout) => sum + workout.planned_duration_minutes, 0);
   const completedCount = workouts.filter((workout) => ["completed", "partial"].includes(workout.status)).length;
 
@@ -232,7 +234,7 @@ export default async function PlanPage() {
             <h2 className="mt-1 text-xl font-bold">{workouts.length} training opportunities</h2>
             <p className="mt-2 text-sm text-brand-100">
               {runCount + combinedCount} run{runCount + combinedCount === 1 ? "" : "s"} ·{" "}
-              {strengthCount + combinedCount} strength · {recoveryDays} recovery
+              {strengthCount + combinedCount} strength · {activeRecoveryCount} active recovery · {restDays} rest
             </p>
           </div>
           <div className="rounded-2xl bg-white/10 px-4 py-3 text-center">
@@ -285,7 +287,7 @@ export default async function PlanPage() {
                 {content}
               </Link>
             ) : (
-              <div key={date} className={classes} aria-label={`${formatDay(date)}: recovery day`}>
+              <div key={date} className={classes} aria-label={`${formatDay(date)}: rest day`}>
                 {content}
               </div>
             );
@@ -319,7 +321,7 @@ export default async function PlanPage() {
             <div className="flex items-center gap-3">
               <span className="grid h-12 w-12 place-items-center rounded-xl bg-white text-2xl shadow-sm" aria-hidden="true">🌿</span>
               <div>
-                <h3 className="text-lg font-bold text-slate-950">Recovery day</h3>
+                <h3 className="text-lg font-bold text-slate-950">Rest day</h3>
                 <p className="text-sm text-slate-600">No workout is scheduled. Nothing needs to be made up.</p>
               </div>
             </div>
@@ -341,7 +343,7 @@ export default async function PlanPage() {
                   return (
                     <div key={date} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                       <span className="text-sm font-semibold text-slate-600">{formatDay(date)}</span>
-                      <span className="text-xs text-slate-400">Recovery</span>
+                      <span className="text-xs text-slate-400">Rest</span>
                     </div>
                   );
                 }
@@ -392,7 +394,7 @@ export default async function PlanPage() {
                       <span className="text-lg" aria-hidden="true">🌿</span>
                       <div>
                         <p className="text-sm font-semibold text-slate-700">{formatDay(date)}</p>
-                        <p className="text-xs text-slate-500">Recovery day</p>
+                        <p className="text-xs text-slate-500">Rest day</p>
                       </div>
                     </div>
                     <span className="text-xs text-slate-400">No workout debt</span>

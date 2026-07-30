@@ -8,6 +8,9 @@ import { SeedProfileButton } from "@/components/seed-profile-button";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { StrengthLogForm } from "./strength-form";
 import { resolveWorkoutStrengthSection } from "@/lib/services/workoutDetailService";
+import { getStrengthWarmup } from "@/domain/content/strengthWarmups";
+import { StrengthWarmupCard } from "@/components/strength-warmup";
+import type { WorkoutKind } from "@/domain/types";
 
 export default async function LogStrengthPage() {
   const supabase = await createClient();
@@ -28,6 +31,9 @@ export default async function LogStrengthPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-slate-900">Log strength</h1>
+      {workout && getStrengthWarmup(workout.workout_kind as WorkoutKind, location) ? (
+        <StrengthWarmupCard warmup={getStrengthWarmup(workout.workout_kind as WorkoutKind, location)!} />
+      ) : null}
       <StrengthLogForm items={items} defaultLocation={location} plannedWorkoutId={workout?.id ?? null} />
       <Link href="/log/skip" className="block text-center text-sm text-slate-500 underline">
         Skip today&apos;s workout instead
