@@ -90,10 +90,16 @@ export async function saveStrengthEdit(_prev: EditFormState, formData: FormData)
       | "band"
       | "machine";
     const rawBand = String(formData.get(`bandLevel_${i}`) ?? "").trim();
+    const metric = String(formData.get(`metric_${i}`) ?? "reps");
+    const result = optionalNumber(formData.get(`reps_${i}`));
     return {
       strengthLogId,
       completedSets: optionalNumber(formData.get(`sets_${i}`)),
-      representativeReps: optionalNumber(formData.get(`reps_${i}`)),
+      representativeReps: metric === "reps" || metric === "breaths" ? result : null,
+      completedSeconds: metric === "seconds" ? result : null,
+      completedDistanceFeet: metric === "distance_feet" ? result : null,
+      completedSteps: metric === "steps" ? result : null,
+      prescriptionMetric: metric as "reps" | "seconds" | "distance_feet" | "steps" | "breaths",
       loadValue:
         loadType === "weighted" || loadType === "machine" ? optionalNumber(formData.get(`load_${i}`)) : null,
       loadType,

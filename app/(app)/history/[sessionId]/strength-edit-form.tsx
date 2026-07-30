@@ -6,6 +6,7 @@ import { getExerciseLoadMetadata, resolveHistoricalLoadType } from "@/domain/con
 import { RedFlagWarning } from "@/components/red-flag-warning";
 import { saveStrengthEdit, type EditFormState } from "./actions";
 import { PostWorkoutFields, SaveResult } from "./edit-shared";
+import { metricResultLabel } from "@/domain/content/prescriptionMetric";
 
 const initialState: EditFormState = {};
 
@@ -43,7 +44,16 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
       loadValue: log.load_value !== null ? String(log.load_value) : "",
       bandLevel: (log.band_level ?? "medium") as BandLevel,
       sets: log.completed_sets !== null ? String(log.completed_sets) : "",
-      reps: log.representative_reps !== null ? String(log.representative_reps) : "",
+      reps:
+        log.completed_seconds !== null
+          ? String(log.completed_seconds)
+          : log.completed_distance_feet !== null
+            ? String(log.completed_distance_feet)
+            : log.completed_steps !== null
+              ? String(log.completed_steps)
+              : log.representative_reps !== null
+                ? String(log.representative_reps)
+                : "",
       difficulty: log.difficulty !== null ? String(log.difficulty) : "",
     })),
   );
@@ -67,7 +77,6 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
       {detail.strengthLogs.map((log, i) => {
         const entry = entries[i]!;
         const metadata = getExerciseLoadMetadata(log.exercise.slug);
-        const perSide = metadata.repScope === "per_side";
         const needsLoadValue = entry.loadType === "weighted" || entry.loadType === "machine";
         return (
           <div key={log.id} className="card space-y-3">
@@ -77,6 +86,7 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
             <input type="hidden" name={`bandLevel_${i}`} value={entry.loadType === "band" ? entry.bandLevel : ""} />
             <input type="hidden" name={`sets_${i}`} value={entry.sets} />
             <input type="hidden" name={`reps_${i}`} value={entry.reps} />
+            <input type="hidden" name={`metric_${i}`} value={metadata.prescriptionMetric} />
             <input type="hidden" name={`difficulty_${i}`} value={entry.difficulty} />
 
             <div>
@@ -163,7 +173,7 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
               </div>
               <div>
                 <label htmlFor={`repsInput_${i}`} className="field-label">
-                  Reps{perSide ? " /side" : ""}
+                  {metricResultLabel(metadata.prescriptionMetric, metadata.repScope)}
                 </label>
                 <input
                   id={`repsInput_${i}`}
@@ -191,7 +201,7 @@ export function StrengthEditForm({ detail }: { detail: SessionDetail }) {
               </div>
             </div>
             <p className="text-xs text-slate-400">
-              Leave a field blank to record it as not captured. Changing sets, reps, or load clears any per-set
+              Leave a field blank to record it as not captured. Changing sets, the recorded result, or load clears any per-set
               detail saved for this exercise.
             </p>
           </div>

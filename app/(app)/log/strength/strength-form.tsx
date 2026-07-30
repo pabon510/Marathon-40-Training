@@ -6,6 +6,7 @@ import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService"
 import { RedFlagWarning } from "@/components/red-flag-warning";
 import { logStrengthAction, type LogStrengthFormState } from "./actions";
 import { ExerciseCard, initialEntry, summaryText, type ExerciseEntry } from "./exercise-card";
+import { metricLabel } from "@/domain/content/prescriptionMetric";
 
 const initialState: LogStrengthFormState = {};
 
@@ -22,7 +23,7 @@ function findMissing(items: GuidedExerciseItem[], entries: ExerciseEntry[]): Mis
     const fields: string[] = [];
     const needsLoad = entry.loadType === "weighted" || entry.loadType === "machine";
     if (needsLoad && entry.loadValue.trim() === "") fields.push("load");
-    if (entry.reps.trim() === "") fields.push("reps");
+    if (entry.reps.trim() === "") fields.push(metricLabel(item.loadMetadata.prescriptionMetric).toLowerCase());
     if (entry.difficulty === null) fields.push("difficulty");
     if (fields.length > 0) missing.push({ exerciseName: item.exercise.name, fields });
   });
@@ -110,7 +111,8 @@ export function StrengthLogForm({
             />
             <input type="hidden" name={`sets_${i}`} value={entry.sets} />
             <input type="hidden" name={`reps_${i}`} value={entry.reps} />
-            <input type="hidden" name={`repBasis_${i}`} value={item.exercise.rep_basis} />
+            <input type="hidden" name={`metric_${i}`} value={item.loadMetadata.prescriptionMetric} />
+            <input type="hidden" name={`repBasis_${i}`} value={item.loadMetadata.repScope} />
             <input
               type="hidden"
               name={`difficulty_${i}`}
