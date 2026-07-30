@@ -292,6 +292,14 @@ export interface ExerciseHistoryCompatibilityRow {
   created_at: string;
 }
 
+export interface ExercisePreferenceRow {
+  user_id: string;
+  exercise_slug: string;
+  preference: "prefer" | "avoid";
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StrengthBlockSelectionRow {
   id: string;
   user_id: string;
@@ -418,6 +426,10 @@ export interface Database {
       exercise_history_compatibility: TableDef<
         ExerciseHistoryCompatibilityRow,
         Insertable<ExerciseHistoryCompatibilityRow, "source_exercise_id" | "target_exercise_id" | "compatibility_scope" | "notes">
+      >;
+      exercise_preferences: TableDef<
+        ExercisePreferenceRow,
+        Insertable<ExercisePreferenceRow, "user_id" | "exercise_slug" | "preference">
       >;
       strength_block_selections: TableDef<
         StrengthBlockSelectionRow,

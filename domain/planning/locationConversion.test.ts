@@ -87,6 +87,37 @@ describe("resolveVariant", () => {
     ];
     expect(resolveVariant(choices, "squat", "gym", false)?.id).toBe("allowed");
   });
+
+  it("selects a preferred exercise among otherwise valid options", () => {
+    const choices: VariantOption[] = [
+      { id: "default", exerciseId: "default", location: "gym", equivalenceGroup: "pull", isShortOption: false, selectionPriority: 1 },
+      { id: "preferred", exerciseId: "preferred", location: "either", equivalenceGroup: "pull", isShortOption: false, selectionPriority: 100, preference: "prefer" },
+    ];
+    expect(resolveVariant(choices, "pull", "gym", false)?.id).toBe("preferred");
+  });
+
+  it("excludes an avoided exercise when a valid alternative exists", () => {
+    const choices: VariantOption[] = [
+      { id: "avoided", exerciseId: "avoided", location: "gym", equivalenceGroup: "pull", isShortOption: false, selectionPriority: 1, preference: "avoid" },
+      { id: "alternative", exerciseId: "alternative", location: "gym", equivalenceGroup: "pull", isShortOption: false, selectionPriority: 20 },
+    ];
+    expect(resolveVariant(choices, "pull", "gym", false)?.id).toBe("alternative");
+  });
+
+  it("keeps the workout executable when every valid option is avoided", () => {
+    const choices: VariantOption[] = [
+      { id: "only", exerciseId: "only", location: "home", equivalenceGroup: "pull", isShortOption: false, preference: "avoid" },
+    ];
+    expect(resolveVariant(choices, "pull", "home", false)?.id).toBe("only");
+  });
+
+  it("never selects a preferred exercise that is safety-ineligible", () => {
+    const choices: VariantOption[] = [
+      { id: "unsafe", exerciseId: "unsafe", location: "gym", equivalenceGroup: "leg", isShortOption: false, preference: "prefer", safetyEligible: false },
+      { id: "safe", exerciseId: "safe", location: "gym", equivalenceGroup: "leg", isShortOption: false },
+    ];
+    expect(resolveVariant(choices, "leg", "gym", false)?.id).toBe("safe");
+  });
 });
 
 describe("selectTemplateItemsForVersion", () => {

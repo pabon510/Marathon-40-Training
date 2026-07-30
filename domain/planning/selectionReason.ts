@@ -6,9 +6,10 @@ const LABELS: Record<SelectionReasonCode, string> = {
   short_option: "Selected for the shorter workout",
   location_equivalent: "Selected for this workout location",
   default_selection: "Core movement selected for this block",
+  user_preference: "Selected because you prefer this exercise",
+  preference_unavailable: "Used because no valid alternative could honor your avoid preference",
 };
 
 export function selectionReasonLabel(reason: SelectionReasonCode): string {
   return LABELS[reason];
 }
-

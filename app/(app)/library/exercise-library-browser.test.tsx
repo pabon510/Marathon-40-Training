@@ -6,7 +6,7 @@ import { ExerciseLibraryBrowser } from "./exercise-library-browser";
 describe("ExerciseLibraryBrowser", () => {
   it("searches the catalogue and clears all filters", () => {
     const entries = buildExerciseLibraryEntries();
-    render(<ExerciseLibraryBrowser entries={entries} />);
+    render(<ExerciseLibraryBrowser entries={entries} initialPreferences={{}} />);
 
     const search = screen.getByRole("searchbox", { name: "Search exercises" });
     fireEvent.change(search, { target: { value: "Wall-supported tibialis raise" } });
@@ -20,7 +20,7 @@ describe("ExerciseLibraryBrowser", () => {
   });
 
   it("shows a helpful empty state for incompatible filters", () => {
-    render(<ExerciseLibraryBrowser entries={buildExerciseLibraryEntries()} />);
+    render(<ExerciseLibraryBrowser entries={buildExerciseLibraryEntries()} initialPreferences={{}} />);
     fireEvent.change(screen.getByLabelText("Location"), { target: { value: "home" } });
     fireEvent.change(screen.getByLabelText("Equipment"), {
       target: { value: "standing calf raise machine" },

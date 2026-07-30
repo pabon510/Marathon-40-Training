@@ -4,6 +4,7 @@ import { LoadGuidance } from "@/components/load-guidance";
 import { LocationToggle } from "@/components/location-toggle";
 import { metricUnit } from "@/domain/content/prescriptionMetric";
 import { selectionReasonLabel } from "@/domain/planning/selectionReason";
+import Link from "next/link";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -89,6 +90,12 @@ export function WorkoutDetailView({
                   <p className="mt-1 text-xs text-brand-700">
                     {selectionReasonLabel(item.selectionReasonCode)}
                   </p>
+                  <Link
+                    href={`/library?exercise=${encodeURIComponent(item.exercise.slug)}`}
+                    className="mt-1 inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
+                  >
+                    View in Library
+                  </Link>
                   <div className="mt-2">
                     <LoadGuidance recommendation={item.recommendation} metadata={item.loadMetadata} />
                   </div>

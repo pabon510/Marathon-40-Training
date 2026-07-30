@@ -71,6 +71,20 @@ export async function resolveStrengthWorkout(
     restSeconds: i.rest_seconds,
   }));
 
+  if (context) {
+    const { data: preferenceRows, error: preferenceError } = await supabase
+      .from("exercise_preferences")
+      .select("exercise_slug, preference")
+      .eq("user_id", context.userId);
+    if (preferenceError) throw preferenceError;
+    const preferenceBySlug = new Map(
+      (preferenceRows ?? []).map((row) => [row.exercise_slug, row.preference] as const),
+    );
+    for (const variant of variants) {
+      if (variant.exerciseSlug) variant.preference = preferenceBySlug.get(variant.exerciseSlug);
+    }
+  }
+
   let block:
     | { startDate: string; endDate: string; index: number }
     | null = null;
