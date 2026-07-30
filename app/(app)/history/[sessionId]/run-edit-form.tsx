@@ -11,6 +11,7 @@ const initialState: EditFormState = {};
 export function RunEditForm({ detail }: { detail: SessionDetail }) {
   const [state, formAction, pending] = useActionState(saveRunEdit, initialState);
   const [unusualPain, setUnusualPain] = useState(detail.session.unusual_pain_flag);
+  const [isStroller, setIsStroller] = useState(detail.runLog?.is_stroller ?? false);
 
   const run = detail.runLog;
   const check = detail.postCheckIn;
@@ -29,6 +30,42 @@ export function RunEditForm({ detail }: { detail: SessionDetail }) {
             </label>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 p-3">
+        <label className="flex min-h-touch items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="isStroller"
+            checked={isStroller}
+            onChange={(event) => setIsStroller(event.target.checked)}
+          />
+          Jogging-stroller run
+        </label>
+        <p className="mt-1 text-xs text-slate-500">
+          Stroller runs are compared only with other stroller runs.
+        </p>
+        {isStroller ? <fieldset className="mt-2">
+          <legend className="field-label">Stroller-related discomfort (optional)</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ["knee", "Knee"],
+              ["back", "Back"],
+              ["shoulder_arm", "Shoulder/arm"],
+              ["other", "Other"],
+            ].map(([value, label]) => (
+              <label key={value} className="flex min-h-touch items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="strollerDiscomfortAreas"
+                  value={value}
+                  defaultChecked={run?.stroller_discomfort_areas.includes(value!) ?? false}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset> : null}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

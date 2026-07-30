@@ -5,6 +5,7 @@ function run(overrides: Partial<ComparableRunCandidate> & { id: string; localDat
   return {
     isThreshold: false,
     runType: "outdoor",
+    isStroller: false,
     durationSeconds: 30 * 60,
     paceSecondsPerMile: 9 * 60 + 15,
     averageHr: 148,
@@ -85,6 +86,22 @@ describe("findComparableTrend", () => {
       run({ id: "2", localDate: "2026-07-08", runType: "outdoor", paceSecondsPerMile: 9 * 60 }),
     ]);
     expect(result).toBeNull();
+  });
+
+  it("keeps stroller and standard outdoor runs separate", () => {
+    const result = findComparableTrend([
+      run({ id: "1", localDate: "2026-07-01", isStroller: true }),
+      run({ id: "2", localDate: "2026-07-08", isStroller: false }),
+    ]);
+    expect(result).toBeNull();
+  });
+
+  it("compares stroller runs with other stroller runs", () => {
+    const result = findComparableTrend([
+      run({ id: "1", localDate: "2026-07-01", isStroller: true, paceSecondsPerMile: 620 }),
+      run({ id: "2", localDate: "2026-07-08", isStroller: true, paceSecondsPerMile: 600 }),
+    ]);
+    expect(result?.improved).toBe(true);
   });
 
   it("excludes runs whose duration differs by more than ~10 minutes", () => {

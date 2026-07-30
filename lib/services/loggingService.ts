@@ -91,6 +91,8 @@ export interface RunLogInput {
   elevationGainFeet: number | null;
   highestKneeDuring: number | null;
   kneeImmediatelyAfter: number | null;
+  isStroller: boolean;
+  strollerDiscomfortAreas: string[];
   splits?: { ordinal: number; durationSeconds: number; splitDistanceMiles?: number }[];
 }
 
@@ -115,6 +117,8 @@ export async function saveRunLog(supabase: Client, input: RunLogInput) {
       elevation_gain_feet: input.elevationGainFeet,
       highest_knee_during: input.highestKneeDuring,
       knee_immediately_after: input.kneeImmediatelyAfter,
+      is_stroller: input.isStroller,
+      stroller_discomfort_areas: input.strollerDiscomfortAreas,
     })
     .select("id")
     .single();

@@ -55,6 +55,7 @@ export default async function WorkoutsPage() {
         plannedWorkoutId={workout.id}
         locationChoice={workout.location_choice ?? "unspecified"}
         showLocationToggle
+        runContext={workout.run_context}
       />
 
       <Link href={STRENGTH_KINDS.includes(kind) || kind === "combined_short" ? "/log/strength" : "/log/run"} className="btn-primary flex justify-center">

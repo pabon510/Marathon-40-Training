@@ -5,6 +5,8 @@ import { LocationToggle } from "@/components/location-toggle";
 import { metricUnit } from "@/domain/content/prescriptionMetric";
 import { selectionReasonLabel } from "@/domain/planning/selectionReason";
 import Link from "next/link";
+import { RunContextToggle } from "@/components/run-context-toggle";
+import { allowsStrollerContext, runContextGuidance, type RunContext } from "@/domain/running/runContext";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -23,6 +25,7 @@ export function WorkoutDetailView({
   plannedWorkoutId,
   locationChoice,
   showLocationToggle,
+  runContext,
 }: {
   kind: WorkoutKind;
   goal: string;
@@ -32,6 +35,7 @@ export function WorkoutDetailView({
   plannedWorkoutId: string;
   locationChoice: "gym" | "home" | "unspecified";
   showLocationToggle: boolean;
+  runContext: RunContext;
 }) {
   return (
     <div className="space-y-4">
@@ -53,6 +57,14 @@ export function WorkoutDetailView({
             </p>
           ) : null}
           <p className="text-xs text-slate-500">{runPrescription.walkBreakGuidance}</p>
+          {allowsStrollerContext(kind) && showLocationToggle ? (
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              <RunContextToggle plannedWorkoutId={plannedWorkoutId} current={runContext} />
+              <p className="mt-2 text-xs text-slate-600">{runContextGuidance(runContext)}</p>
+            </div>
+          ) : runContext === "stroller" ? (
+            <p className="mt-2 text-xs text-slate-600">{runContextGuidance(runContext)}</p>
+          ) : null}
           {runPrescription.isCalibration ? (
             <p className="text-xs text-amber-700">Calibration week: maintain or reduce only, no progression.</p>
           ) : null}

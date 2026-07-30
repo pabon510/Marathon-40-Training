@@ -90,6 +90,7 @@ export interface PlannedWorkoutRow {
   run_prescription: Json | null;
   strength_template_id: string | null;
   location_choice: "gym" | "home" | "unspecified" | null;
+  run_context: "standard" | "stroller";
   shorter_alternative: Json | null;
   original_workout_id: string | null;
   completion_credit_factor: number;
@@ -167,6 +168,8 @@ export interface RunLogRow {
   elevation_gain_feet: number | null;
   highest_knee_during: number | null;
   knee_immediately_after: number | null;
+  is_stroller: boolean;
+  stroller_discomfort_areas: string[];
   created_at: string;
   updated_at: string;
 }

@@ -23,6 +23,7 @@ function snapshotOf(detail: SessionDetail): SessionSnapshot {
       detail.postCheckIn?.knee_immediately_after ?? detail.runLog?.knee_immediately_after ?? null,
     completedFull: detail.postCheckIn?.completed_full ?? null,
     runType: detail.runLog?.run_type ?? null,
+    isStroller: detail.runLog?.is_stroller ?? null,
     distanceMiles: detail.runLog?.distance_miles ?? null,
     durationSeconds: detail.runLog?.duration_seconds ?? null,
     strengthLoadSignature:
@@ -44,6 +45,8 @@ function snapshotOf(detail: SessionDetail): SessionSnapshot {
 
 export interface RunEditInput {
   runType: RunType;
+  isStroller: boolean;
+  strollerDiscomfortAreas: string[];
   distanceMiles: number | null;
   durationSeconds: number | null;
   paceOverrideSecondsPerMile: number | null;
@@ -208,6 +211,8 @@ export async function updateRunSession(
 
   const runValues = {
     run_type: input.runType,
+    is_stroller: input.isStroller,
+    stroller_discomfort_areas: input.strollerDiscomfortAreas,
     distance_miles: input.distanceMiles,
     duration_seconds: input.durationSeconds,
     calculated_pace_seconds_per_mile: calculatedPace,

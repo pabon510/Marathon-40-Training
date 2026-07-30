@@ -18,7 +18,7 @@ Use UUID primary keys, `created_at`/`updated_at` timestamps, and `user_id` on us
 
 ### `planned_workouts`
 
-`id`, plan version, local date, workout kind, priority, status (`provisional`, `confirmed`, `completed`, `partial`, `skipped`, `blocked`, `replaced`, `incomplete`), goal, planned duration, run prescription JSON, strength template id, location choice, shorter alternative JSON, original workout id, completion-credit factor.
+`id`, plan version, local date, workout kind, priority, status (`provisional`, `confirmed`, `completed`, `partial`, `skipped`, `blocked`, `replaced`, `incomplete`), goal, planned duration, run prescription JSON, strength template id, location choice, run context (`standard` or `stroller`), shorter alternative JSON, original workout id, completion-credit factor.
 
 Run prescription stores duration, HR target/ceiling, pace context, intervals, walk-break guidance, and calibration flag.
 
@@ -38,7 +38,12 @@ Constraints enforce ranges. Only the newest check-in for the day drives the acti
 
 ### `run_logs`
 
-`workout_session_id`, run type, distance miles, duration seconds, calculated pace, pace override, average HR, maximum HR, elevation gain feet, highest knee during, knee immediately after.
+`workout_session_id`, run type, stroller flag, optional stroller-related discomfort areas, distance miles, duration seconds, calculated pace, pace override, average HR, maximum HR, elevation gain feet, highest knee during, knee immediately after.
+
+Stroller context is separate from run type so an outdoor run-walk may also be
+a stroller run. Stroller runs count normally toward time, mileage, completion,
+and progression eligibility, but comparable-run trends partition them from
+standard runs.
 
 ### `run_splits`
 

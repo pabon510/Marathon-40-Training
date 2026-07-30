@@ -200,6 +200,7 @@ export async function generateWeekFromSetup(
       run_prescription: runPrescription as unknown as Database["public"]["Tables"]["planned_workouts"]["Insert"]["run_prescription"],
       strength_template_id: templateId,
       location_choice: "unspecified" as const,
+      run_context: "standard" as const,
     });
   }
 

@@ -67,11 +67,16 @@ export default async function ProgressPage() {
       <div className="card">
         <p className="text-sm font-semibold text-slate-900">Running is getting easier</p>
         {trend ? (
-          <p className="mt-1 text-sm text-slate-700">
-            {trend.improved
-              ? `Improving: comparing ${trend.earlier.localDate} to ${trend.later.localDate} (${trend.basis.replaceAll("_", " ")}).`
-              : `No improvement detected yet between the most recent comparable runs (${trend.earlier.localDate} vs ${trend.later.localDate}).`}
-          </p>
+          <div className="mt-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
+              {trend.later.isStroller ? "Stroller runs" : "Standard runs"}
+            </p>
+            <p className="text-sm text-slate-700">
+              {trend.improved
+                ? `Improving: comparing ${trend.earlier.localDate} to ${trend.later.localDate} (${trend.basis.replaceAll("_", " ")}).`
+                : `No improvement detected yet between the most recent comparable runs (${trend.earlier.localDate} vs ${trend.later.localDate}).`}
+            </p>
+          </div>
         ) : (
           <p className="mt-1 text-sm text-slate-500">Not enough comparable easy runs yet.</p>
         )}

@@ -84,6 +84,7 @@ export async function getComparableRunTrend(supabase: Client, userId: string, si
       localDate: session.local_date,
       isThreshold: false,
       runType: log.run_type,
+      isStroller: log.is_stroller,
       durationSeconds: log.duration_seconds,
       paceSecondsPerMile: pace,
       averageHr: log.average_hr,
