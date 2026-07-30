@@ -1,7 +1,23 @@
 import { buildExerciseLibraryEntries } from "@/domain/content/exerciseLibraryBrowser";
 import { ExerciseLibraryBrowser } from "./exercise-library-browser";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/currentUser";
 
-export default function ExerciseLibraryPage() {
+export default async function ExerciseLibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ exercise?: string }>;
+}) {
+  const { exercise } = await searchParams;
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+  const { data: preferences } = await supabase
+    .from("exercise_preferences")
+    .select("exercise_slug, preference")
+    .eq("user_id", user!.id);
+  const initialPreferences = Object.fromEntries(
+    (preferences ?? []).map((row) => [row.exercise_slug, row.preference]),
+  );
   return (
     <div className="space-y-4">
       <div>
@@ -10,8 +26,11 @@ export default function ExerciseLibraryPage() {
           Review exercise setup, form guidance, loading, and approved alternatives.
         </p>
       </div>
-      <ExerciseLibraryBrowser entries={buildExerciseLibraryEntries()} />
+      <ExerciseLibraryBrowser
+        entries={buildExerciseLibraryEntries()}
+        initialExerciseSlug={exercise}
+        initialPreferences={initialPreferences}
+      />
     </div>
   );
 }
-

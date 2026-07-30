@@ -5,6 +5,7 @@ import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService"
 import { LoadGuidance } from "@/components/load-guidance";
 import { metricResultLabel, metricUnit } from "@/domain/content/prescriptionMetric";
 import { selectionReasonLabel } from "@/domain/planning/selectionReason";
+import Link from "next/link";
 
 export type LoadTypeChoice = "weighted" | "bodyweight" | "band" | "machine";
 export type BandLevelChoice = "light" | "medium" | "heavy";
@@ -144,6 +145,12 @@ export function ExerciseCard({
           <p className="mt-1 text-xs text-brand-700">
             {selectionReasonLabel(item.selectionReasonCode)}
           </p>
+          <Link
+            href={`/library?exercise=${encodeURIComponent(item.exercise.slug)}`}
+            className="inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
+          >
+            View in Library
+          </Link>
         </div>
         <span className="shrink-0 text-xs text-slate-400">
           {index + 1}

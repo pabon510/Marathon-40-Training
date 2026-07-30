@@ -13,12 +13,14 @@ export interface VariantOption {
   isPersistedSelection?: boolean;
   hasCompatibleHistory?: boolean;
   rotationEligible?: boolean;
+  preference?: "prefer" | "avoid";
 }
 
 function compareVariants(a: VariantOption, b: VariantOption, location: Location, wantShort: boolean): number {
   const booleans: Array<[boolean, boolean]> = [
     [wantShort ? a.isShortOption : !a.isShortOption, wantShort ? b.isShortOption : !b.isShortOption],
     [a.isPersistedSelection === true, b.isPersistedSelection === true],
+    [a.preference === "prefer", b.preference === "prefer"],
     [a.location === location, b.location === location],
     [a.hasCompatibleHistory === true, b.hasCompatibleHistory === true],
   ];
@@ -52,7 +54,11 @@ export function resolveVariant(
       v.safetyEligible !== false,
   );
   if (inGroup.length === 0) return null;
-  const ordered = [...inGroup].sort((a, b) => compareVariants(a, b, location, wantShort));
+  const withoutAvoided = inGroup.filter((variant) => variant.preference !== "avoid");
+  // Avoid is a preference, not an unsafe hard block. If every valid option
+  // is avoided, keep the workout executable and explain the fallback.
+  const eligible = withoutAvoided.length > 0 ? withoutAvoided : inGroup;
+  const ordered = [...eligible].sort((a, b) => compareVariants(a, b, location, wantShort));
   const persisted = ordered.find((variant) => variant.isPersistedSelection);
   if (persisted) return persisted;
 
@@ -110,7 +116,9 @@ export type SelectionReasonCode =
   | "accessory_rotation"
   | "short_option"
   | "location_equivalent"
-  | "default_selection";
+  | "default_selection"
+  | "user_preference"
+  | "preference_unavailable";
 
 /**
  * Builds the concrete, location-aware strength workout from a template.
@@ -140,6 +148,10 @@ export function buildStrengthWorkout(
     const rotationCandidates = candidates.filter((candidate) => candidate.rotationEligible);
     const selectionReasonCode: SelectionReasonCode = variant.isPersistedSelection
       ? "block_consistency"
+      : variant.preference === "prefer"
+        ? "user_preference"
+        : variant.preference === "avoid"
+          ? "preference_unavailable"
       : variant.rotationEligible === true && rotationCandidates.length > 1
         ? "accessory_rotation"
         : wantShort && variant.isShortOption

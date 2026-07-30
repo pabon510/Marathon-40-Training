@@ -1,11 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   filterExerciseLibrary,
   type ExerciseLibraryEntry,
 } from "@/domain/content/exerciseLibraryBrowser";
 import { metricLabel } from "@/domain/content/prescriptionMetric";
+import {
+  setExercisePreference,
+  type ExercisePreferenceChoice,
+} from "./actions";
+
+type StoredPreference = Exclude<ExercisePreferenceChoice, "neutral">;
 
 function label(value: string): string {
   return value
@@ -32,9 +38,71 @@ function RelationshipList({ title, names }: { title: string; names: string[] }) 
   );
 }
 
-function ExerciseDetails({ exercise }: { exercise: ExerciseLibraryEntry }) {
+function PreferenceControls({
+  exercise,
+  preference,
+  pending,
+  onChange,
+}: {
+  exercise: ExerciseLibraryEntry;
+  preference: StoredPreference | undefined;
+  pending: boolean;
+  onChange: (preference: ExercisePreferenceChoice) => void;
+}) {
+  const options: Array<{ value: ExercisePreferenceChoice; label: string }> = [
+    { value: "prefer", label: "Prefer" },
+    { value: "avoid", label: "Avoid" },
+    { value: "neutral", label: "No preference" },
+  ];
   return (
-    <details className="card group">
+    <fieldset>
+      <legend className="text-sm font-semibold text-slate-800">Your preference</legend>
+      <p className="mt-1 text-xs text-slate-500">
+        Preferences influence valid alternatives but never override safety or equipment rules.
+      </p>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {options.map((option) => {
+          const selected =
+            option.value === "neutral" ? preference === undefined : preference === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={selected}
+              disabled={pending}
+              onClick={() => onChange(option.value)}
+              className={selected ? "btn-primary px-2 text-xs" : "btn-secondary px-2 text-xs"}
+              aria-label={`${option.label} ${exercise.name}`}
+            >
+              {pending && selected ? "Saving…" : option.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function ExerciseDetails({
+  exercise,
+  preference,
+  pending,
+  initiallyOpen,
+  onPreferenceChange,
+}: {
+  exercise: ExerciseLibraryEntry;
+  preference: StoredPreference | undefined;
+  pending: boolean;
+  initiallyOpen: boolean;
+  onPreferenceChange: (preference: ExercisePreferenceChoice) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
+  return (
+    <details
+      className="card group"
+      open={isOpen}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+    >
       <summary className="flex min-h-touch cursor-pointer list-none items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">{exercise.name}</h3>
@@ -55,6 +123,12 @@ function ExerciseDetails({ exercise }: { exercise: ExerciseLibraryEntry }) {
       </summary>
 
       <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+        <PreferenceControls
+          exercise={exercise}
+          preference={preference}
+          pending={pending}
+          onChange={onPreferenceChange}
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipment</h4>
@@ -114,12 +188,25 @@ function ExerciseDetails({ exercise }: { exercise: ExerciseLibraryEntry }) {
   );
 }
 
-export function ExerciseLibraryBrowser({ entries }: { entries: ExerciseLibraryEntry[] }) {
-  const [query, setQuery] = useState("");
+export function ExerciseLibraryBrowser({
+  entries,
+  initialExerciseSlug,
+  initialPreferences,
+}: {
+  entries: ExerciseLibraryEntry[];
+  initialExerciseSlug?: string;
+  initialPreferences: Record<string, StoredPreference>;
+}) {
+  const linkedExercise = entries.find((entry) => entry.slug === initialExerciseSlug);
+  const [query, setQuery] = useState(linkedExercise?.name ?? "");
   const [location, setLocation] = useState<"all" | "gym" | "home">("all");
   const [movementPattern, setMovementPattern] = useState("");
   const [equipment, setEquipment] = useState("");
   const [targetMuscle, setTargetMuscle] = useState("");
+  const [preferences, setPreferences] = useState(initialPreferences);
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [preferenceError, setPreferenceError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   const movements = useMemo(() => unique(entries.map((entry) => entry.movementPattern)), [entries]);
   const equipmentOptions = useMemo(() => unique(entries.flatMap((entry) => entry.equipment)), [entries]);
@@ -129,6 +216,25 @@ export function ExerciseLibraryBrowser({ entries }: { entries: ExerciseLibraryEn
     [entries, query, location, movementPattern, equipment, targetMuscle],
   );
   const hasFilters = Boolean(query || location !== "all" || movementPattern || equipment || targetMuscle);
+
+  function changePreference(slug: string, next: ExercisePreferenceChoice) {
+    setPendingSlug(slug);
+    setPreferenceError(null);
+    startTransition(async () => {
+      const result = await setExercisePreference(slug, next);
+      if (result.error) {
+        setPreferenceError(result.error);
+      } else {
+        setPreferences((current) => {
+          const updated = { ...current };
+          if (next === "neutral") delete updated[slug];
+          else updated[slug] = next;
+          return updated;
+        });
+      }
+      setPendingSlug(null);
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -197,9 +303,24 @@ export function ExerciseLibraryBrowser({ entries }: { entries: ExerciseLibraryEn
         </div>
       </section>
 
+      {preferenceError ? (
+        <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-safety-block">
+          {preferenceError}
+        </p>
+      ) : null}
+
       {filtered.length > 0 ? (
         <div className="space-y-3">
-          {filtered.map((exercise) => <ExerciseDetails key={exercise.slug} exercise={exercise} />)}
+          {filtered.map((exercise) => (
+            <ExerciseDetails
+              key={exercise.slug}
+              exercise={exercise}
+              preference={preferences[exercise.slug]}
+              pending={pendingSlug === exercise.slug}
+              initiallyOpen={exercise.slug === initialExerciseSlug}
+              onPreferenceChange={(next) => changePreference(exercise.slug, next)}
+            />
+          ))}
         </div>
       ) : (
         <div className="card text-center">
@@ -210,4 +331,3 @@ export function ExerciseLibraryBrowser({ entries }: { entries: ExerciseLibraryEn
     </div>
   );
 }
-
