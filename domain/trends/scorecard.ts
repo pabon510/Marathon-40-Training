@@ -7,6 +7,8 @@ export interface ScorecardInputs {
   weeklyMaxKnee: [number, number, number, number];
   checkedInWorkoutDays: number;
   totalWorkoutDays: number;
+  /** Prevents future zero-filled weeks from making the knee goal look earned early. */
+  fourWeekWindowComplete: boolean;
 }
 
 export interface ScorecardCriterion {
@@ -34,7 +36,8 @@ export function evaluateScorecard(inputs: ScorecardInputs): ScorecardResult {
   const weeksAtLeast75 = inputs.weeklyAdaptedPlanCompletionRates.filter((r) => r >= 0.75).length;
   const checkinRate =
     inputs.totalWorkoutDays === 0 ? 0 : inputs.checkedInWorkoutDays / inputs.totalWorkoutDays;
-  const kneeStableOrImproving = inputs.weeklyMaxKnee[3] <= inputs.weeklyMaxKnee[0];
+  const kneeStableOrImproving =
+    inputs.fourWeekWindowComplete && inputs.weeklyMaxKnee[3] <= inputs.weeklyMaxKnee[0];
 
   const criteria: ScorecardCriterion[] = [
     {

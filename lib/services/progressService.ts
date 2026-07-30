@@ -17,6 +17,18 @@ export async function getWeeklyRunTotals(supabase: Client, userId: string, weekS
   return data ?? { total_run_minutes: 0, total_run_miles: 0 };
 }
 
+export async function getRecentWeeklyRunTotals(supabase: Client, userId: string, startWeek: string, endWeek: string) {
+  const { data, error } = await supabase
+    .from("v_weekly_run_totals")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("week_start", startWeek)
+    .lte("week_start", endWeek)
+    .order("week_start", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getWeeklyKneeSummary(supabase: Client, userId: string, weekStart: string) {
   const { data, error } = await supabase
     .from("v_weekly_knee_summary")
@@ -97,7 +109,12 @@ export async function getComparableRunTrend(supabase: Client, userId: string, si
 }
 
 /** Builds the 4-week scorecard starting from `programStartDate` (Monday). */
-export async function computeFourWeekScorecard(supabase: Client, userId: string, programStartDate: string) {
+export async function computeFourWeekScorecard(
+  supabase: Client,
+  userId: string,
+  programStartDate: string,
+  asOfDate: string = addDays(mondayOfWeek(programStartDate), 27),
+) {
   const weekStarts = [0, 1, 2, 3].map((i) => addDays(mondayOfWeek(programStartDate), i * 7));
 
   const [planRates, kneeMaxes, strength, trend] = await Promise.all([
@@ -123,6 +140,7 @@ export async function computeFourWeekScorecard(supabase: Client, userId: string,
     weeklyMaxKnee: kneeMaxes as [number, number, number, number],
     checkedInWorkoutDays: checkedInDays,
     totalWorkoutDays,
+    fourWeekWindowComplete: asOfDate >= addDays(mondayOfWeek(programStartDate), 27),
   };
 
   return evaluateScorecard(inputs);
