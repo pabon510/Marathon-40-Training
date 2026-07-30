@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { LoadGuidance } from "@/components/load-guidance";
+import { LabeledScale } from "@/components/labeled-scale";
+import { DIFFICULTY_SCALE } from "@/domain/content/trainingScales";
 import { metricResultLabel, metricUnit } from "@/domain/content/prescriptionMetric";
 import { selectionReasonLabel } from "@/domain/planning/selectionReason";
 import Link from "next/link";
@@ -38,14 +40,6 @@ export function initialEntry(item: GuidedExerciseItem): ExerciseEntry {
     done: false,
   };
 }
-
-const DIFFICULTY_ANCHORS = [
-  { value: 3, label: "easy" },
-  { value: 5, label: "moderate" },
-  { value: 7, label: "challenging — about 2-3 reps left" },
-  { value: 9, label: "nearly maximal" },
-  { value: 10, label: "maximal" },
-];
 
 const LOAD_TYPE_LABELS: Record<LoadTypeChoice, string> = {
   weighted: "Weighted",
@@ -344,39 +338,14 @@ export function ExerciseCard({
         ) : null}
       </div> : null}
 
-      <div>
-        <div className="flex items-baseline justify-between">
-          <span className="field-label">Difficulty</span>
-          <span
-            className={`text-sm font-semibold ${
-              entry.difficulty === null ? "text-slate-400" : "text-brand-700"
-            }`}
-          >
-            {entry.difficulty === null ? "Not set" : `${entry.difficulty}/10`}
-          </span>
-        </div>
-        <input
-          type="range"
-          min={1}
-          max={10}
-          step={1}
-          value={entry.difficulty ?? 7}
-          onChange={(e) => onChange({ difficulty: Number(e.target.value) })}
-          aria-label={`Difficulty for ${item.exercise.name}`}
-          aria-valuetext={entry.difficulty === null ? "not set" : `${entry.difficulty} of 10`}
-          className={`mt-2 h-11 w-full ${entry.difficulty === null ? "opacity-50" : ""}`}
-        />
-        <ul className="mt-1 space-y-0.5 text-xs text-slate-500">
-          {DIFFICULTY_ANCHORS.map((a) => (
-            <li key={a.value}>
-              <span className="font-medium text-slate-600">{a.value}:</span> {a.label}
-            </li>
-          ))}
-        </ul>
-        {entry.difficulty === null ? (
-          <p className="mt-1 text-xs text-slate-400">Drag the slider to record a difficulty.</p>
-        ) : null}
-      </div>
+      <LabeledScale
+        label={`Difficulty for ${item.exercise.name}`}
+        min={1}
+        max={10}
+        labels={DIFFICULTY_SCALE}
+        value={entry.difficulty}
+        onChange={(difficulty) => onChange({ difficulty })}
+      />
 
       <div className="flex gap-2">
         {onBack ? (

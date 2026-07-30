@@ -28,6 +28,7 @@ Next.js App Router, TypeScript strict mode, Tailwind CSS, Supabase Postgres/Auth
 - Use migrations, RLS, typed domain services, and seed data.
 - Seed profile idempotently and never overwrite live data.
 - Use accessible, mobile-first UI; verify iPhone and desktop layouts.
+- Use the shared labeled-scale component and centralized scale definitions for scored inputs. Never add an unlabeled raw range slider or a silently selected score.
 - Never commit secrets or expose service-role keys.
 - Do not add Garmin/Oura syncing, native/offline features, social/multi-user/payment features, body measurements, readiness scores, or badges.
 - Maintain a short `README.md` with setup, environment, migration, seed, test, and deployment steps.
