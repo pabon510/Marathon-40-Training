@@ -91,6 +91,7 @@ export function ExerciseCard({
   onToggleExpand,
   onMarkDone,
   onBack,
+  substituteHref,
 }: {
   item: GuidedExerciseItem;
   index: number;
@@ -101,6 +102,7 @@ export function ExerciseCard({
   onMarkDone: () => void;
   /** Omit (or pass null) on the first exercise, where there's nothing to go back to. */
   onBack?: (() => void) | null;
+  substituteHref?: string | null;
 }) {
   // Open by default: this card is the merged "view instructions + log the
   // set" screen, so there's no separate read-only guided-mode pass first.
@@ -151,6 +153,14 @@ export function ExerciseCard({
           >
             View in Library
           </Link>
+          {substituteHref ? (
+            <Link
+              href={substituteHref}
+              className="ml-4 inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
+            >
+              Substitute
+            </Link>
+          ) : null}
         </div>
         <span className="shrink-0 text-xs text-slate-400">
           {index + 1}

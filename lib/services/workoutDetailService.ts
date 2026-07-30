@@ -3,6 +3,7 @@ import type { Database, ProfileRow } from "@/lib/supabase/types";
 import { resolveStrengthWorkout } from "@/lib/services/workoutContentService";
 import { attachLoadGuidance, type GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import type { Location } from "@/domain/types";
+import { applyPlannedExerciseSubstitutions } from "@/lib/services/exerciseSubstitutionService";
 
 type Client = SupabaseClient<Database>;
 
@@ -25,6 +26,7 @@ export async function resolveWorkoutStrengthSection(
   userId: string,
   profile: Pick<ProfileRow, "equipment">,
   workout: {
+    id: string;
     strength_template_id: string | null;
     planned_duration_minutes: number;
     local_date: string;
@@ -41,7 +43,13 @@ export async function resolveWorkoutStrengthSection(
     wantShort,
     { userId, localDate: workout.local_date },
   );
-  const guidedItems = await attachLoadGuidance(supabase, userId, profile, items, location);
+  const substitutedItems = await applyPlannedExerciseSubstitutions(
+    supabase,
+    workout.id,
+    location,
+    items,
+  );
+  const guidedItems = await attachLoadGuidance(supabase, userId, profile, substitutedItems, location);
 
   return { templateName: template.name, templateGoal: template.goal, items: guidedItems };
 }

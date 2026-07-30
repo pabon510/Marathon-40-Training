@@ -33,9 +33,11 @@ function findMissing(items: GuidedExerciseItem[], entries: ExerciseEntry[]): Mis
 export function StrengthLogForm({
   items,
   defaultLocation,
+  plannedWorkoutId,
 }: {
   items: GuidedExerciseItem[];
   defaultLocation: "gym" | "home";
+  plannedWorkoutId: string | null;
 }) {
   const [state, formAction, pending] = useActionState(logStrengthAction, initialState);
   const [entries, setEntries] = useState<ExerciseEntry[]>(() => items.map(initialEntry));
@@ -132,6 +134,11 @@ export function StrengthLogForm({
               onToggleExpand={() => setExpandedIndex(expandedIndex === i ? null : i)}
               onMarkDone={() => markDone(i)}
               onBack={i > 0 ? () => goBack(i) : null}
+              substituteHref={
+                plannedWorkoutId
+                  ? `/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${item.ordinal}`
+                  : null
+              }
             />
           </div>
         );

@@ -118,7 +118,8 @@ export type SelectionReasonCode =
   | "location_equivalent"
   | "default_selection"
   | "user_preference"
-  | "preference_unavailable";
+  | "preference_unavailable"
+  | "manual_substitution";
 
 /**
  * Builds the concrete, location-aware strength workout from a template.

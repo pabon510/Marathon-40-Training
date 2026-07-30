@@ -90,11 +90,22 @@ export function WorkoutDetailView({
                   <p className="mt-1 text-xs text-brand-700">
                     {selectionReasonLabel(item.selectionReasonCode)}
                   </p>
+                  {item.savedSubstitution ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Replaces {item.savedSubstitution.originalExerciseName} for this workout only.
+                    </p>
+                  ) : null}
                   <Link
                     href={`/library?exercise=${encodeURIComponent(item.exercise.slug)}`}
                     className="mt-1 inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
                   >
                     View in Library
+                  </Link>
+                  <Link
+                    href={`/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${item.ordinal}`}
+                    className="ml-4 inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
+                  >
+                    Substitute
                   </Link>
                   <div className="mt-2">
                     <LoadGuidance recommendation={item.recommendation} metadata={item.loadMetadata} />
