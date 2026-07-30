@@ -56,10 +56,16 @@ export default async function WorkoutsPage() {
         locationChoice={workout.location_choice ?? "unspecified"}
         showLocationToggle
         runContext={workout.run_context}
+        recoveryRoutineSlug={workout.recovery_routine_slug}
       />
 
-      <Link href={STRENGTH_KINDS.includes(kind) || kind === "combined_short" ? "/log/strength" : "/log/run"} className="btn-primary flex justify-center">
-        {STRENGTH_KINDS.includes(kind) || kind === "combined_short"
+      <Link
+        href={kind === "active_recovery" ? "/log/recovery" : STRENGTH_KINDS.includes(kind) || kind === "combined_short" ? "/log/strength" : "/log/run"}
+        className="btn-primary flex justify-center"
+      >
+        {kind === "active_recovery"
+          ? "Complete active recovery"
+          : STRENGTH_KINDS.includes(kind) || kind === "combined_short"
           ? "Start logging, exercise by exercise"
           : "Log this workout"}
       </Link>

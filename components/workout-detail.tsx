@@ -7,6 +7,9 @@ import { selectionReasonLabel } from "@/domain/planning/selectionReason";
 import Link from "next/link";
 import { RunContextToggle } from "@/components/run-context-toggle";
 import { allowsStrollerContext, runContextGuidance, type RunContext } from "@/domain/running/runContext";
+import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
+import { getStrengthWarmup } from "@/domain/content/strengthWarmups";
+import { StrengthWarmupCard } from "@/components/strength-warmup";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -26,6 +29,7 @@ export function WorkoutDetailView({
   locationChoice,
   showLocationToggle,
   runContext,
+  recoveryRoutineSlug,
 }: {
   kind: WorkoutKind;
   goal: string;
@@ -36,7 +40,10 @@ export function WorkoutDetailView({
   locationChoice: "gym" | "home" | "unspecified";
   showLocationToggle: boolean;
   runContext: RunContext;
+  recoveryRoutineSlug?: string | null;
 }) {
+  const recoveryRoutine = kind === "active_recovery" ? getRecoveryRoutine(recoveryRoutineSlug) : null;
+  const warmup = strength ? getStrengthWarmup(kind, locationChoice === "gym" ? "gym" : "home") : null;
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">{goal}</p>
@@ -82,6 +89,8 @@ export function WorkoutDetailView({
               </div>
             ) : null}
           </div>
+
+          {warmup ? <StrengthWarmupCard warmup={warmup} /> : null}
 
           <div className="card">
             <p className="mb-2 text-sm font-semibold text-slate-900">Full workout overview</p>
@@ -129,7 +138,35 @@ export function WorkoutDetailView({
         </div>
       ) : null}
 
-      {!runPrescription && !strength ? (
+      {recoveryRoutine ? (
+        <section className="card border-teal-200 bg-teal-50/60">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-base font-bold text-slate-900">{recoveryRoutine.name}</p>
+              <p className="text-xs text-slate-600">{recoveryRoutine.description}</p>
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-teal-900">
+              {recoveryRoutine.durationMinutes} min
+            </span>
+          </div>
+          <p className="mt-3 text-xs font-semibold text-teal-900">Target effort: 1–3/10 · Home</p>
+          <ol className="mt-3 space-y-3">
+            {recoveryRoutine.movements.map((movement, index) => (
+              <li key={movement.name} className="rounded-lg bg-white p-3 ring-1 ring-teal-100">
+                <p className="text-sm font-semibold text-slate-900">
+                  {index + 1}. {movement.name} · {movement.minutes} min
+                </p>
+                <p className="mt-1 text-xs text-slate-600">{movement.guidance}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-3 text-xs text-slate-600">
+            This should feel restorative, not like another workout. Reduce the range or stop if discomfort increases.
+          </p>
+        </section>
+      ) : null}
+
+      {!runPrescription && !strength && !recoveryRoutine ? (
         <p className="card text-sm text-slate-500">{durationMinutes} minutes.</p>
       ) : null}
     </div>

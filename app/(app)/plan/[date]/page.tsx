@@ -73,6 +73,7 @@ export default async function PlanDayPage({ params }: { params: Promise<{ date: 
         locationChoice={workout.location_choice ?? "unspecified"}
         showLocationToggle={relation !== "past"}
         runContext={workout.run_context}
+        recoveryRoutineSlug={workout.recovery_routine_slug}
       />
 
       {relation === "today" ? (

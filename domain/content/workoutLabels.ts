@@ -14,6 +14,7 @@ export const WORKOUT_KIND_LABELS: Record<string, string> = {
   strength_full: "Full-body strength",
   combined_short: "Short run + strength",
   upper_core_safety: "Upper/core (safety alternative)",
+  active_recovery: "Active recovery",
   rest: "Rest",
   custom: "Custom",
 };

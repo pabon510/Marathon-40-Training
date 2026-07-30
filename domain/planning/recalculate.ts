@@ -19,6 +19,7 @@ export const PRIORITY_ORDER: WorkoutKind[] = [
   "threshold_run",
   "upper_core_safety",
   "custom",
+  "active_recovery",
   "rest",
 ];
 

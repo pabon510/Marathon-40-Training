@@ -29,6 +29,7 @@ export type WorkoutKind =
   | "strength_full"
   | "combined_short"
   | "upper_core_safety"
+  | "active_recovery"
   | "rest"
   | "custom";
 

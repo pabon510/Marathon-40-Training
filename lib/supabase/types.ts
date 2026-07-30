@@ -59,6 +59,7 @@ export interface WeeklySetupRow {
   available_dates: string[];
   intended_long_run_date: string;
   backup_long_run_date: string;
+  active_recovery_choices: Json;
   submitted_at: string;
   created_at: string;
   updated_at: string;
@@ -89,6 +90,7 @@ export interface PlannedWorkoutRow {
   planned_duration_minutes: number;
   run_prescription: Json | null;
   strength_template_id: string | null;
+  recovery_routine_slug: string | null;
   location_choice: "gym" | "home" | "unspecified" | null;
   run_context: "standard" | "stroller";
   shorter_alternative: Json | null;

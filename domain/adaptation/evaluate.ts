@@ -63,6 +63,8 @@ function workoutKindToSessionTypes(kind: WorkoutKind): SessionType[] {
       return ["run", "strength"];
     case "upper_core_safety":
       return ["strength", "mobility"];
+    case "active_recovery":
+      return ["mobility"];
     case "rest":
       return ["rest_active"];
     default:
