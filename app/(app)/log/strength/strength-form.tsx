@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import type { GuidedExerciseItem } from "@/lib/services/strengthGuidanceService";
 import { RedFlagWarning } from "@/components/red-flag-warning";
 import { LabeledScale } from "@/components/labeled-scale";
@@ -9,6 +9,7 @@ import { EFFORT_SCALE, KNEE_SCALE } from "@/domain/content/trainingScales";
 import { logStrengthAction, type LogStrengthFormState } from "./actions";
 import { ExerciseCard, initialEntry, summaryText, type ExerciseEntry } from "./exercise-card";
 import { metricLabel } from "@/domain/content/prescriptionMetric";
+import { parseStrengthDraft, STRENGTH_DRAFT_VERSION, strengthDraftStorageKey } from "./strength-draft";
 
 const initialState: LogStrengthFormState = {};
 
@@ -36,10 +37,12 @@ export function StrengthLogForm({
   items,
   defaultLocation,
   plannedWorkoutId,
+  draftId,
 }: {
   items: GuidedExerciseItem[];
   defaultLocation: "gym" | "home";
   plannedWorkoutId: string | null;
+  draftId: string;
 }) {
   const [state, formAction, pending] = useActionState(logStrengthAction, initialState);
   const [entries, setEntries] = useState<ExerciseEntry[]>(() => items.map(initialEntry));
@@ -51,6 +54,45 @@ export function StrengthLogForm({
   const [kneeImmediatelyAfter, setKneeImmediatelyAfter] = useState<number | null>(null);
   const confirmedRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const storageKey = strengthDraftStorageKey(draftId);
+  const exerciseIds = items.map((item) => item.exercise.id);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const draft = parseStrengthDraft(window.sessionStorage.getItem(storageKey), exerciseIds);
+      if (draft) {
+        setEntries(draft.entries);
+        setExpandedIndex(draft.expandedIndex);
+        setEffort(draft.effort);
+        setHighestKneeDuring(draft.highestKneeDuring);
+        setKneeImmediatelyAfter(draft.kneeImmediatelyAfter);
+        setUnusualPain(draft.unusualPain);
+      }
+      setDraftRestored(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // The workout identity and ordered exercise IDs deliberately control restoration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!draftRestored || state.success) return;
+    window.sessionStorage.setItem(storageKey, JSON.stringify({
+      version: STRENGTH_DRAFT_VERSION,
+      exerciseIds,
+      entries,
+      expandedIndex,
+      effort,
+      highestKneeDuring,
+      kneeImmediatelyAfter,
+      unusualPain,
+    }));
+  }, [draftRestored, state.success, storageKey, entries, expandedIndex, effort, highestKneeDuring, kneeImmediatelyAfter, unusualPain, exerciseIds]);
+
+  useEffect(() => {
+    if (state.success) window.sessionStorage.removeItem(storageKey);
+  }, [state.success, storageKey]);
 
   if (state.success) {
     return (
@@ -144,6 +186,7 @@ export function StrengthLogForm({
                   ? `/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${item.ordinal}`
                   : null
               }
+              libraryHref={`/library?exercise=${encodeURIComponent(item.exercise.slug)}&returnTo=${encodeURIComponent("/log/strength")}`}
             />
           </div>
         );

@@ -2,13 +2,15 @@ import { buildExerciseLibraryEntries } from "@/domain/content/exerciseLibraryBro
 import { ExerciseLibraryBrowser } from "./exercise-library-browser";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/currentUser";
+import Link from "next/link";
 
 export default async function ExerciseLibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ exercise?: string }>;
+  searchParams: Promise<{ exercise?: string; returnTo?: string }>;
 }) {
-  const { exercise } = await searchParams;
+  const { exercise, returnTo } = await searchParams;
+  const safeReturnTo = returnTo === "/log/strength" ? returnTo : null;
   const supabase = await createClient();
   const user = await getCurrentUser();
   const { data: preferences } = await supabase
@@ -21,6 +23,7 @@ export default async function ExerciseLibraryPage({
   return (
     <div className="space-y-4">
       <div>
+        {safeReturnTo ? <Link href={safeReturnTo} className="mb-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline">← Return to workout</Link> : null}
         <h1 className="text-xl font-bold text-slate-900">Exercise library</h1>
         <p className="mt-1 text-sm text-slate-600">
           Review exercise setup, form guidance, loading, and approved alternatives.

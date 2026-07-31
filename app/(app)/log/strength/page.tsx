@@ -34,7 +34,12 @@ export default async function LogStrengthPage() {
       {workout && getStrengthWarmup(workout.workout_kind as WorkoutKind, location) ? (
         <StrengthWarmupCard warmup={getStrengthWarmup(workout.workout_kind as WorkoutKind, location)!} />
       ) : null}
-      <StrengthLogForm items={items} defaultLocation={location} plannedWorkoutId={workout?.id ?? null} />
+      <StrengthLogForm
+        items={items}
+        defaultLocation={location}
+        plannedWorkoutId={workout?.id ?? null}
+        draftId={`${localDate}:${workout?.id ?? location}`}
+      />
       <Link href="/log/skip" className="block text-center text-sm text-slate-500 underline">
         Skip today&apos;s workout instead
       </Link>
