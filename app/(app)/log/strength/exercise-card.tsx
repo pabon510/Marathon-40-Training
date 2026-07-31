@@ -86,6 +86,7 @@ export function ExerciseCard({
   onMarkDone,
   onBack,
   substituteHref,
+  libraryHref,
 }: {
   item: GuidedExerciseItem;
   index: number;
@@ -97,6 +98,7 @@ export function ExerciseCard({
   /** Omit (or pass null) on the first exercise, where there's nothing to go back to. */
   onBack?: (() => void) | null;
   substituteHref?: string | null;
+  libraryHref?: string;
 }) {
   // Open by default: this card is the merged "view instructions + log the
   // set" screen, so there's no separate read-only guided-mode pass first.
@@ -142,7 +144,7 @@ export function ExerciseCard({
             {selectionReasonLabel(item.selectionReasonCode)}
           </p>
           <Link
-            href={`/library?exercise=${encodeURIComponent(item.exercise.slug)}`}
+            href={libraryHref ?? `/library?exercise=${encodeURIComponent(item.exercise.slug)}`}
             className="inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
           >
             View in Library
