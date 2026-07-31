@@ -14,6 +14,9 @@ import {
 import { addDays, mondayOfWeek, todayLocalDate } from "@/lib/date";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import { formatDuration, formatPace } from "@/domain/metrics/pace";
+import { getWeeklyReview } from "@/lib/services/weeklyReviewService";
+import { weeklyReviewResultSchema } from "@/domain/analysis/weeklyReview";
+import { WeeklyCoachingCard } from "./weekly-coaching-card";
 
 function weekLabel(date: string) {
   return `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
@@ -43,7 +46,7 @@ export default async function ProgressPage() {
   const weekStart = mondayOfWeek(today);
   const fourWeeksAgo = addDays(weekStart, -21);
 
-  const [runTotals, recentRuns, strength, planCompletionRate, trend, dailyKnee, { data: earliestVersion }] =
+  const [runTotals, recentRuns, strength, planCompletionRate, trend, dailyKnee, weeklyReview, { data: earliestVersion }] =
     await Promise.all([
       getWeeklyRunTotals(supabase, user!.id, weekStart),
       getRecentWeeklyRunTotals(supabase, user!.id, fourWeeksAgo, weekStart),
@@ -51,6 +54,7 @@ export default async function ProgressPage() {
       getWeeklyPlanCompletion(supabase, user!.id, weekStart),
       getComparableRunTrend(supabase, user!.id, addDays(today, -90)),
       getDailyKneeScores(supabase, user!.id, addDays(today, -13), today),
+      getWeeklyReview(supabase, user!.id, weekStart),
       supabase
         .from("plan_versions")
         .select("rolling_start_date")
@@ -68,6 +72,9 @@ export default async function ProgressPage() {
   const maxWeeklyMinutes = Math.max(1, ...recentRuns.map((week) => week.total_run_minutes));
   const maxKnee = dailyKnee.length ? Math.max(...dailyKnee.map((day) => day.max_knee_score)) : null;
   const missionPercent = Math.round((scorecard.metCount / 5) * 100);
+  const parsedWeeklyReview = weeklyReview?.status === "completed"
+    ? weeklyReviewResultSchema.safeParse(weeklyReview.structured_result)
+    : null;
 
   return (
     <div className="space-y-5">
@@ -124,6 +131,12 @@ export default async function ProgressPage() {
           </div>
         </div>
       </section>
+
+      <WeeklyCoachingCard
+        weekStart={weekStart}
+        initialResult={parsedWeeklyReview?.success ? parsedWeeklyReview.data : null}
+        isCurrentWeek
+      />
 
       <section className="card">
         <div className="flex items-end justify-between">
