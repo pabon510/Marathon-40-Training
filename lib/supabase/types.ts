@@ -237,6 +237,24 @@ export interface RunAnalysisRow {
   updated_at: string;
 }
 
+export interface WeeklyCoachingReviewRow {
+  id: string;
+  user_id: string;
+  week_start: string;
+  week_end: string;
+  status: "pending" | "completed" | "failed" | "stale";
+  review_version: string;
+  prompt_version: string;
+  rules_version: string;
+  model: string;
+  evidence_snapshot: Json;
+  structured_result: Json | null;
+  error_message: string | null;
+  generated_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RunSplitRow {
   id: string;
   run_log_id: string;
@@ -497,6 +515,10 @@ export interface Database {
       run_analyses: TableDef<
         RunAnalysisRow,
         Insertable<RunAnalysisRow, "user_id" | "run_log_id" | "analysis_version" | "prompt_version" | "rules_version" | "model">
+      >;
+      weekly_coaching_reviews: TableDef<
+        WeeklyCoachingReviewRow,
+        Insertable<WeeklyCoachingReviewRow, "user_id" | "week_start" | "week_end" | "review_version" | "prompt_version" | "rules_version" | "model">
       >;
       run_splits: TableDef<RunSplitRow, Insertable<RunSplitRow, "run_log_id" | "ordinal" | "duration_seconds">>;
       strength_logs: TableDef<StrengthLogRow, Insertable<StrengthLogRow, "workout_session_id" | "exercise_id" | "ordinal">>;

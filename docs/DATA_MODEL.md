@@ -73,6 +73,14 @@ structured narrative, errors, and the deterministic next-morning knee update.
 The rules engine owns verdict and progression status; AI explains supplied
 evidence but cannot change the plan.
 
+### `weekly_coaching_reviews`
+
+Stores one versioned, evidence-grounded recap for a Monday-through-Sunday
+training week. The evidence snapshot contains deterministic consistency,
+running, strength, knee, and run-review signals. AI may summarize those facts
+and identify one focus, but cannot alter planning, adaptation, progression, or
+safety behavior.
+
 ### `run_splits`
 
 `id`, run log/session, ordinal, split distance (default 1 mile), duration seconds or pace seconds/mile.

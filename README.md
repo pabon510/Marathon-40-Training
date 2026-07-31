@@ -38,8 +38,9 @@ and `AGENTS.md` for build precedence/rules.
    8. `supabase/migrations/0008_loading_and_logging_detail.sql`
 
    Continue with every later numbered migration in filename order through
-   `0015_run_analysis.sql`. Migration `0015` creates a private screenshot
-   bucket, retention metadata, and saved run-analysis records.
+   `0016_weekly_coaching_reviews.sql`. Migration `0015` creates a private
+   screenshot bucket, retention metadata, and saved run-analysis records.
+   Migration `0016` adds saved, versioned weekly coaching recaps.
 
    Migrations after `0007` are **add-only** — they add columns, tables and
    indexes but never drop, rewrite, or delete existing rows, so they are
