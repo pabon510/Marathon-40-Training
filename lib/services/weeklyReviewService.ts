@@ -2,25 +2,30 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 import { addDays } from "@/lib/date";
 import { WEEKLY_REVIEW_RULES_VERSION, type WeeklyReviewEvidence } from "@/domain/analysis/weeklyReview";
+import { WEEKLY_REVIEW_VERSION } from "@/domain/analysis/weeklyReview";
+import { getPlannedWorkoutsForRange } from "@/lib/services/planService";
 
 type Client = SupabaseClient<Database>;
 
 export async function buildWeeklyReviewEvidence(supabase: Client, userId: string, weekStart: string, today: string): Promise<WeeklyReviewEvidence> {
   const weekEnd = addDays(weekStart, 6);
-  const [plan, sessions, knees, checkins] = await Promise.all([
+  const [plan, sessions, knees, checkins, plannedWorkouts] = await Promise.all([
     supabase.from("v_weekly_plan_completion").select("*").eq("user_id", userId).eq("week_start", weekStart).maybeSingle(),
-    supabase.from("workout_sessions").select("id, session_type, completion_state, overall_effort, run_logs(id, distance_miles, duration_seconds, effort, is_stroller)").eq("user_id", userId).gte("local_date", weekStart).lte("local_date", weekEnd),
+    supabase.from("workout_sessions").select("id, session_type, completion_state, overall_effort").eq("user_id", userId).gte("local_date", weekStart).lte("local_date", weekEnd),
     supabase.from("v_daily_knee_scores").select("local_date, max_knee_score").eq("user_id", userId).gte("local_date", weekStart).lte("local_date", weekEnd).order("local_date"),
     supabase.from("v_checkin_completion").select("*").eq("user_id", userId).eq("week_start", weekStart).maybeSingle(),
+    getPlannedWorkoutsForRange(supabase, userId, weekStart, weekEnd),
   ]);
   for (const result of [plan, sessions, knees, checkins]) if (result.error) throw result.error;
 
   const completed = (sessions.data ?? []).filter((session) => session.completion_state === "full" || session.completion_state === "partial");
   const runSessions = completed.filter((session) => session.session_type === "run");
-  const runLogs = runSessions.flatMap((session) => {
-    const logs = (session as unknown as { run_logs: Array<{ id: string; distance_miles: number | null; duration_seconds: number | null; effort: number | null; is_stroller: boolean }> }).run_logs;
-    return Array.isArray(logs) ? logs : [];
-  });
+  const runSessionIds = runSessions.map((session) => session.id);
+  const runLogResult = runSessionIds.length
+    ? await supabase.from("run_logs").select("id, distance_miles, duration_seconds, effort, is_stroller").in("workout_session_id", runSessionIds)
+    : { data: [], error: null };
+  if (runLogResult.error) throw runLogResult.error;
+  const runLogs = runLogResult.data ?? [];
   const runLogIds = runLogs.map((run) => run.id);
   const analyses = runLogIds.length
     ? await supabase.from("run_analyses").select("evidence_snapshot, run_log_id").eq("user_id", userId).eq("status", "completed").in("run_log_id", runLogIds)
@@ -48,6 +53,9 @@ export async function buildWeeklyReviewEvidence(supabase: Client, userId: string
       checkInDays: checkins.data?.checked_in_days ?? 0,
       workoutDays: checkins.data?.workout_days ?? 0,
     },
+    remainingPlan: plannedWorkouts
+      .filter((workout) => workout.local_date >= today && !["completed", "partial", "skipped", "blocked"].includes(workout.status) && !["rest", "active_recovery"].includes(workout.workout_kind))
+      .map((workout) => ({ date: workout.local_date, workoutKind: workout.workout_kind, goal: workout.goal })),
     running: {
       sessions: runSessions.length,
       minutes: Math.round(runLogs.reduce((sum, run) => sum + (run.duration_seconds ?? 0), 0) / 60),
@@ -77,7 +85,7 @@ export async function buildWeeklyReviewEvidence(supabase: Client, userId: string
 }
 
 export async function getWeeklyReview(supabase: Client, userId: string, weekStart: string) {
-  const { data, error } = await supabase.from("weekly_coaching_reviews").select("*").eq("user_id", userId).eq("week_start", weekStart).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data, error } = await supabase.from("weekly_coaching_reviews").select("*").eq("user_id", userId).eq("week_start", weekStart).eq("review_version", WEEKLY_REVIEW_VERSION).maybeSingle();
   if (error) throw error;
   return data;
 }
