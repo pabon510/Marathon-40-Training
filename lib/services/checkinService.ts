@@ -1,11 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/types";
 import { evaluateDailyAdaptation } from "@/domain/adaptation/evaluate";
-import { computeRecoverySignals, type RecoveryInputs } from "@/domain/adaptation/recovery";
+import { computeRecoverySignals, evaluateGeneralRecovery, type RecoveryInputs } from "@/domain/adaptation/recovery";
 import { addDays } from "@/lib/date";
 import { applyDailyRecalculation, recordRuleEvaluation, recordSafetyEvent } from "@/lib/services/recalcService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import type { AvailableTime, RunPrescription, WorkoutKind } from "@/domain/types";
+import { finalizePreviousRunAnalyses } from "@/lib/services/runAnalysisService";
 
 type Client = SupabaseClient<Database>;
 
@@ -118,31 +119,48 @@ export async function submitCheckInAndRecalculate(supabase: Client, userId: stri
     .single();
   if (insertError || !checkIn) throw insertError ?? new Error("Failed to save check-in");
 
-  const plannedWorkout = await getPlannedWorkoutForDate(supabase, userId, input.localDate);
-  if (!plannedWorkout) {
-    return { checkIn, plannedWorkout: null, adaptation: null, priorDailyKnee: null, durationMinutes: null };
-  }
-
-  const [priorDailyKnee, recentOuraAverage, poorRecoveryYesterday] = await Promise.all([
+  const [plannedWorkout, priorDailyKnee, recentOuraAverage, poorRecoveryYesterday] = await Promise.all([
+    getPlannedWorkoutForDate(supabase, userId, input.localDate),
     getPriorDailyKnee(supabase, userId, input.localDate),
     getRecentOuraAverage(supabase, userId, input.localDate),
     getPoorRecoveryYesterday(supabase, userId, input.localDate),
   ]);
+
+  const recoveryInputs: RecoveryInputs = {
+    energy: input.energy,
+    soreness: input.soreness,
+    fatigue: input.fatigue,
+    hoursSlept: input.hoursSlept,
+    ouraScore: input.ouraScore,
+    recentOuraAverage,
+    poorRecoveryYesterday,
+  };
+
+  // The run review is advisory and must never block the morning check-in.
+  // Finalize yesterday's progression evidence even when today is a rest day.
+  try {
+    const recovery = evaluateGeneralRecovery(recoveryInputs);
+    await finalizePreviousRunAnalyses(
+      supabase,
+      userId,
+      addDays(input.localDate, -1),
+      input.knee,
+      recovery.progressionAllowed,
+    );
+  } catch (error) {
+    console.error("Could not finalize prior run analysis", error);
+  }
+
+  if (!plannedWorkout) {
+    return { checkIn, plannedWorkout: null, adaptation: null, priorDailyKnee, durationMinutes: null };
+  }
 
   const adaptation = evaluateDailyAdaptation({
     plannedWorkoutKind: plannedWorkout.workout_kind as WorkoutKind,
     plannedDurationMinutes: plannedWorkout.planned_duration_minutes,
     morningKnee: input.knee,
     priorDailyKnee,
-    recovery: {
-      energy: input.energy,
-      soreness: input.soreness,
-      fatigue: input.fatigue,
-      hoursSlept: input.hoursSlept,
-      ouraScore: input.ouraScore,
-      recentOuraAverage,
-      poorRecoveryYesterday,
-    },
+    recovery: recoveryInputs,
     availableTime: input.availableTime,
     localDate: input.localDate,
   });

@@ -171,7 +171,7 @@ export default async function TodayPage() {
       .maybeSingle(),
     supabase
       .from("workout_sessions")
-      .select("completion_state, overall_effort, completed_at")
+      .select("id, session_type, completion_state, overall_effort, completed_at")
       .eq("user_id", user!.id)
       .eq("planned_workout_id", workout.id)
       .order("created_at", { ascending: false })
@@ -249,7 +249,12 @@ export default async function TodayPage() {
               {latestSession?.overall_effort ? `Logged at effort ${latestSession.overall_effort}/10. ` : ""}
               This session counts toward your adapted weekly plan.
             </p>
-            <Link href="/history" className="mt-3 inline-flex text-sm font-semibold text-white underline">Review logged workout</Link>
+            <Link
+              href={latestSession?.session_type === "run" ? `/history/${latestSession.id}/analysis` : "/history"}
+              className="mt-3 inline-flex text-sm font-semibold text-white underline"
+            >
+              {latestSession?.session_type === "run" ? "View run review" : "Review logged workout"}
+            </Link>
           </div>
         ) : (
           <Link href="/workouts" className="mt-5 flex min-h-touch w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 shadow-sm">

@@ -37,6 +37,10 @@ and `AGENTS.md` for build precedence/rules.
    7. `supabase/migrations/0007_derived_views.sql`
    8. `supabase/migrations/0008_loading_and_logging_detail.sql`
 
+   Continue with every later numbered migration in filename order through
+   `0015_run_analysis.sql`. Migration `0015` creates a private screenshot
+   bucket, retention metadata, and saved run-analysis records.
+
    Migrations after `0007` are **add-only** — they add columns, tables and
    indexes but never drop, rewrite, or delete existing rows, so they are
    safe to apply to a database that already has logged workouts.
@@ -50,20 +54,22 @@ and `AGENTS.md` for build precedence/rules.
 
 ## 2. Environment variables (Vercel — no local `.env.local` needed)
 
-Set all three of these as Vercel Environment Variables (Project Settings →
+Set these as Vercel Environment Variables (Project Settings →
 Environment Variables), for Production (and Preview if you use it):
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
 ```
 
-All three are safe to set in Vercel. Only variables prefixed
+All are safe to set in Vercel. Only variables prefixed
 `NEXT_PUBLIC_` are ever bundled into browser-sent JavaScript;
 `SUPABASE_SERVICE_ROLE_KEY` stays server-side and is read only by the
 `POST /api/admin/seed` route (see step 3) — nothing in the client bundle
-imports it. Redeploy after adding/changing env vars so the running
+imports it. `OPENAI_API_KEY` also stays server-side and powers Garmin
+screenshot extraction and evidence-grounded run reviews. Redeploy after adding/changing env vars so the running
 deployment picks them up.
 
 `.env.example` in this repo documents the same variables for anyone who

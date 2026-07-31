@@ -63,6 +63,7 @@ export async function saveRunEdit(_prev: EditFormState, formData: FormData): Pro
 
     revalidatePath("/history");
     revalidatePath(`/history/${sessionId}`);
+    revalidatePath(`/history/${sessionId}/analysis`);
     revalidatePath("/progress");
     revalidatePath("/plan");
     revalidatePath("/today");

@@ -52,12 +52,26 @@ standard runs.
 
 ### `run_imports`
 
-Stores an authenticated user's temporary Garmin screenshot extraction as a
-reviewable draft. It records model/parser provenance, screenshot count,
-structured extracted values with confidence and source evidence, status, and
-the confirmed run-log id. Screenshot bytes are never stored. A draft has no
-effect on workout completion, progress, or adaptation; only the user-confirmed
-`run_logs` row does.
+Stores an authenticated user's Garmin screenshot extraction as a reviewable
+draft. It records model/parser provenance, screenshot count, structured values,
+qualitative chart observations with confidence/evidence, status, and the
+confirmed run-log id. A draft has no effect on workout completion, progress, or
+adaptation; only the user-confirmed `run_logs` row does.
+
+### `run_import_images`
+
+Tracks source screenshots in a private Supabase Storage bucket. Each row stores
+the owning user, import, ordinal, private storage path, media type, size, a
+180-day expiration, an explicit keep-permanently choice, and deletion time.
+Confirmed metrics and analysis evidence remain after image deletion.
+
+### `run_analyses`
+
+Stores a non-blocking post-run review linked to one run log: generation status,
+model, prompt/rules/analysis versions, immutable evidence snapshot, validated
+structured narrative, errors, and the deterministic next-morning knee update.
+The rules engine owns verdict and progression status; AI explains supplied
+evidence but cannot change the plan.
 
 ### `run_splits`
 

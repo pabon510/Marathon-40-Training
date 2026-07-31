@@ -241,6 +241,13 @@ export async function updateRunSession(
   const change = detectMaterialChanges(snapshotOf(before), snapshotOf(after!));
   if (change.isMaterial) {
     await recalculateAfterEdit(supabase, userId, before, snapshotOf(after!), change);
+    if (after!.runLog) {
+      await supabase
+        .from("run_analyses")
+        .update({ status: "stale", error_message: "Run values changed. Regenerate this review to use the corrected data." })
+        .eq("run_log_id", after!.runLog.id)
+        .eq("user_id", userId);
+    }
   }
   return change;
 }
