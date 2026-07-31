@@ -204,6 +204,39 @@ export interface RunImportRow {
   updated_at: string;
 }
 
+export interface RunImportImageRow {
+  id: string;
+  user_id: string;
+  run_import_id: string;
+  ordinal: number;
+  storage_path: string;
+  mime_type: "image/jpeg" | "image/png" | "image/webp";
+  byte_size: number;
+  expires_at: string;
+  keep_permanently: boolean;
+  deleted_at: string | null;
+  created_at: string;
+}
+
+export interface RunAnalysisRow {
+  id: string;
+  user_id: string;
+  run_log_id: string;
+  status: "pending" | "completed" | "failed" | "stale";
+  analysis_version: string;
+  prompt_version: string;
+  rules_version: string;
+  model: string;
+  evidence_snapshot: Json;
+  structured_result: Json | null;
+  error_message: string | null;
+  generated_at: string | null;
+  next_morning_result: Json | null;
+  next_morning_updated_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RunSplitRow {
   id: string;
   run_log_id: string;
@@ -456,6 +489,14 @@ export interface Database {
       run_imports: TableDef<
         RunImportRow,
         Insertable<RunImportRow, "user_id" | "model" | "parser_version" | "image_count">
+      >;
+      run_import_images: TableDef<
+        RunImportImageRow,
+        Insertable<RunImportImageRow, "user_id" | "run_import_id" | "ordinal" | "storage_path" | "mime_type" | "byte_size">
+      >;
+      run_analyses: TableDef<
+        RunAnalysisRow,
+        Insertable<RunAnalysisRow, "user_id" | "run_log_id" | "analysis_version" | "prompt_version" | "rules_version" | "model">
       >;
       run_splits: TableDef<RunSplitRow, Insertable<RunSplitRow, "run_log_id" | "ordinal" | "duration_seconds">>;
       strength_logs: TableDef<StrengthLogRow, Insertable<StrengthLogRow, "workout_session_id" | "exercise_id" | "ordinal">>;

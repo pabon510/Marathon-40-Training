@@ -9,6 +9,7 @@ import type { GarminExtraction } from "@/domain/import/garminScreenshot";
 import { extractionToFormValues, type GarminFormValues } from "@/domain/import/garminForm";
 import { logRunAction, type LogRunFormState } from "./actions";
 import { GarminScreenshotImport } from "./garmin-screenshot-import";
+import { RunAnalysisStatus } from "./run-analysis-status";
 
 const initialState: LogRunFormState = {};
 
@@ -52,6 +53,9 @@ export function RunLogForm({
       <div className="card space-y-2">
         <p className="text-sm font-semibold text-safety-ok">Run logged.</p>
         {state.tomorrowPreview ? <p className="text-sm text-slate-600">{state.tomorrowPreview}</p> : null}
+        {state.runLogId && state.sessionId ? (
+          <RunAnalysisStatus runLogId={state.runLogId} sessionId={state.sessionId} />
+        ) : null}
         <Link href="/history" className="text-sm text-brand-700 underline">
           View or correct it in history
         </Link>
@@ -68,6 +72,9 @@ export function RunLogForm({
           <p className="text-sm font-semibold text-green-900">Garmin draft ready for review</p>
           <p className="mt-1 text-xs text-green-800">
             Check every value below. You can correct or clear anything before saving.
+          </p>
+          <p className="mt-1 text-xs text-green-800">
+            Source screenshots are stored privately for 180 days so this run can be audited or reanalyzed.
           </p>
           {extraction?.warnings.length ? (
             <ul className="mt-2 list-disc pl-5 text-xs text-amber-800">

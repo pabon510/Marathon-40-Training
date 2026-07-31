@@ -39,7 +39,10 @@ export default async function EditSessionPage({
       </div>
 
       {detail.session.session_type === "run" ? (
-        <RunEditForm detail={detail} />
+        <>
+          <Link href={`/history/${sessionId}/analysis`} className="btn-primary flex w-full">View run review</Link>
+          <RunEditForm detail={detail} />
+        </>
       ) : detail.session.session_type === "strength" ? (
         <StrengthEditForm detail={detail} />
       ) : (

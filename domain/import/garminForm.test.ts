@@ -8,6 +8,11 @@ const field = (value: number | null) => ({
   evidence: value === null ? null : String(value),
   sourceImageIndex: value === null ? null : 1,
 });
+const chartFields = {
+  heartRateChartPattern: { value: "gradually_rising" as const, confidence: "medium" as const, evidence: "HR chart rises", sourceImageIndex: 1 },
+  paceChartPattern: { value: "breaks_visible" as const, confidence: "medium" as const, evidence: "Pace dips", sourceImageIndex: 1 },
+  prescribedHrCeilingPattern: { value: "near_for_long_periods" as const, confidence: "medium" as const, evidence: "Near 150", sourceImageIndex: 1 },
+};
 
 describe("Garmin screenshot extraction", () => {
   it("maps readable values to editable run-form fields without inventing missing data", () => {
@@ -29,6 +34,7 @@ describe("Garmin screenshot extraction", () => {
       averageCadenceSpm: field(111),
       maximumCadenceSpm: field(225),
       averageStrideLengthMeters: field(1.38),
+      ...chartFields,
       warnings: [],
     });
 
@@ -54,6 +60,7 @@ describe("Garmin screenshot extraction", () => {
       elevationLossFeet: empty, aerobicTrainingEffect: empty, anaerobicTrainingEffect: empty,
       averageTemperatureF: empty, averageCadenceSpm: empty, maximumCadenceSpm: empty,
       averageStrideLengthMeters: empty, warnings: ["Not visible"],
+      ...chartFields,
     });
     expect(Object.values(extractionToFormValues(extraction))).toEqual(
       expect.arrayContaining([""]),

@@ -15,6 +15,8 @@ export interface LogRunFormState {
   error?: string;
   success?: boolean;
   tomorrowPreview?: string;
+  runLogId?: string;
+  sessionId?: string;
 }
 
 function optionalNumber(formData: FormData, name: string): number | null {
@@ -264,7 +266,7 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
     revalidatePath("/today");
     revalidatePath("/plan");
     revalidatePath("/progress");
-    return { success: true, tomorrowPreview };
+    return { success: true, tomorrowPreview, runLogId, sessionId };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save run log." };
   }
