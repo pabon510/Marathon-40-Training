@@ -11,11 +11,12 @@ afterEach(cleanup);
  * would post. Going through the real parser afterwards means these tests
  * assert on what would actually be *stored*, not just on what is on screen.
  */
-function renderForm(props: { needsLocation?: boolean; rememberedLocation?: "gym" | "home" | null } = {}) {
+function renderForm(props: { needsLocation?: boolean; needsAvailableTime?: boolean; rememberedLocation?: "gym" | "home" | null } = {}) {
   const action = vi.fn<(formData: FormData) => void>();
   render(
     <CheckInFormView
       needsLocation={props.needsLocation ?? false}
+      needsAvailableTime={props.needsAvailableTime ?? true}
       rememberedLocation={props.rememberedLocation ?? null}
       state={{}}
       action={action}
@@ -65,6 +66,22 @@ describe("requirement 1: readiness fields begin unanswered", () => {
 
     expect(screen.getByText("Knee discomfort: not answered")).toBeInTheDocument();
     expect(screen.queryByText("Knee discomfort: 0/10")).not.toBeInTheDocument();
+  });
+});
+
+describe("rest-day check-ins", () => {
+  it("does not ask for workout availability when no workout is scheduled", () => {
+    const form = renderForm({ needsAvailableTime: false });
+    expect(screen.queryByRole("group", { name: /Available time/ })).not.toBeInTheDocument();
+    form.submit();
+    fireEvent.click(screen.getByRole("button", { name: "Submit with missing fields" }));
+    expect(form.stored().skippedFields).toContain("availableTime");
+  });
+
+  it("explains why knee data matters without claiming a workout will be changed", () => {
+    renderForm({ needsAvailableTime: false });
+    expect(screen.getByText("A knee score helps detect discomfort that appears the day after training.")).toBeInTheDocument();
+    expect(screen.queryByText(/plan will default to non-running/)).not.toBeInTheDocument();
   });
 });
 
