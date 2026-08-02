@@ -52,6 +52,7 @@ const EMPTY_SCORES: ReadinessScores = { energy: null, soreness: null, stress: nu
 
 export interface CheckInFormViewProps {
   needsLocation: boolean;
+  needsAvailableTime?: boolean;
   /** Today's already-chosen strength location, so the answer is remembered. */
   rememberedLocation?: "gym" | "home" | null;
   state: CheckInFormState;
@@ -75,6 +76,7 @@ export interface CheckInFormViewProps {
  */
 export function CheckInFormView({
   needsLocation,
+  needsAvailableTime = true,
   rememberedLocation = null,
   state,
   action,
@@ -103,9 +105,7 @@ export function CheckInFormView({
         <p className="text-sm text-slate-600">
           There is no workout scheduled today, so nothing needed to be adapted.
         </p>
-        <Link href="/plan/setup" className="btn-secondary inline-flex">
-          Set up this week
-        </Link>
+        <p className="text-xs text-slate-500">Your recovery and knee trends now include today.</p>
       </div>
     );
   }
@@ -121,7 +121,7 @@ export function CheckInFormView({
     // An explicit "I don't know" is an answer about the answer — don't nag,
     // but the conservative-fallback notice stays visible either way.
     if (knee === null && !kneeDeclined) missing.push("knee");
-    if (availableTime === null) missing.push("availableTime");
+    if (needsAvailableTime && availableTime === null) missing.push("availableTime");
     return missing;
   }
 
@@ -275,12 +275,14 @@ export function CheckInFormView({
         </p>
         {kneeUnanswered ? (
           <p className="mt-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
-            Today&apos;s plan will default to non-running until knee discomfort is confirmed.
+            {needsAvailableTime
+              ? "Today's plan will default to non-running until knee discomfort is confirmed."
+              : "A knee score helps detect discomfort that appears the day after training."}
           </p>
         ) : null}
       </fieldset>
 
-      <fieldset className="min-w-0 border-0 p-0">
+      {needsAvailableTime ? <fieldset className="min-w-0 border-0 p-0">
         <legend className="field-label">Available time (minutes)</legend>
         <div className="mt-1.5 grid grid-cols-6 gap-1.5">
           {AVAILABLE_TIME_OPTIONS.map((option) => (
@@ -297,7 +299,7 @@ export function CheckInFormView({
             </label>
           ))}
         </div>
-      </fieldset>
+      </fieldset> : null}
 
       {needsLocation ? (
         <fieldset className="min-w-0 border-0 p-0">
@@ -329,6 +331,7 @@ export function CheckInFormView({
       {confirming ? (
         <MissingFieldsConfirmation
           missing={confirming}
+          appliesWorkoutRules={needsAvailableTime}
           onGoBack={() => setConfirming(null)}
           onSubmitAnyway={confirmAndSubmit}
         />
@@ -351,10 +354,12 @@ export function CheckInFormView({
 
 function MissingFieldsConfirmation({
   missing,
+  appliesWorkoutRules,
   onGoBack,
   onSubmitAnyway,
 }: {
   missing: string[];
+  appliesWorkoutRules: boolean;
   onGoBack: () => void;
   onSubmitAnyway: () => void;
 }) {
@@ -387,7 +392,7 @@ function MissingFieldsConfirmation({
         <p id="missing-fields-title" className="text-sm font-semibold text-amber-900">
           You have not answered {listed}. Submit anyway?
         </p>
-        {kneeMissing ? (
+        {kneeMissing && appliesWorkoutRules ? (
           <p className="mt-2 text-sm text-amber-900">
             Without a knee score, today&apos;s plan will use the conservative non-running fallback:
             upper-body, core, mobility, walking, or rest.
@@ -426,15 +431,18 @@ function CheckInResult({ outcome }: { outcome: NonNullable<CheckInFormState["out
 
 export function CheckInForm({
   needsLocation,
+  needsAvailableTime = true,
   rememberedLocation = null,
 }: {
   needsLocation: boolean;
+  needsAvailableTime?: boolean;
   rememberedLocation?: "gym" | "home" | null;
 }) {
   const [state, formAction, pending] = useActionState(submitCheckInAction, initialState);
   return (
     <CheckInFormView
       needsLocation={needsLocation}
+      needsAvailableTime={needsAvailableTime}
       rememberedLocation={rememberedLocation}
       state={state}
       action={formAction}

@@ -142,6 +142,28 @@ export default async function TodayPage() {
             <Link href="/plan/setup" className="btn-primary mt-4 flex w-full">Set up this week</Link>
           </section>
         )}
+        {!latestCheckIn ? (
+          <section className="space-y-3">
+            <div className="px-1">
+              <p className="text-sm font-bold text-slate-950">Recovery check-in</p>
+              <p className="mt-1 text-sm text-slate-600">Track sleep, readiness, and delayed knee discomfort even when you are resting.</p>
+            </div>
+            <CheckInForm needsLocation={false} needsAvailableTime={false} />
+          </section>
+        ) : (
+          <details className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700">
+              <span>Recovery check-in saved at {formatCheckInTime(latestCheckIn.check_in_time, profile.timezone)}</span>
+              <span className="text-brand-700">Refresh</span>
+            </summary>
+            <div className="border-t border-slate-100 p-4">
+              <p className="mb-3 text-sm text-slate-600">
+                {latestCheckIn.knee === null ? "Knee discomfort was not recorded." : `Knee discomfort: ${latestCheckIn.knee}/10.`}
+              </p>
+              <CheckInForm needsLocation={false} needsAvailableTime={false} />
+            </div>
+          </details>
+        )}
       </div>
     );
   }
