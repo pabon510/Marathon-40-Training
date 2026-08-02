@@ -1,6 +1,7 @@
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import type { RunComparison } from "@/domain/analysis/runComparison";
 
-export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v1";
+export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v2";
 
 export interface RunEvidenceInput {
   workoutKind: WorkoutKind | null;
@@ -25,6 +26,7 @@ export interface RunEvidenceInput {
   averageCadenceSpm: number | null;
   maximumCadenceSpm: number | null;
   chartObservations: unknown;
+  comparison: RunComparison | null;
 }
 
 export type RunVerdict =
@@ -45,6 +47,8 @@ export interface RunEvidencePackage {
   contextModifiers: string[];
   dataQualityWarnings: string[];
   improvementDirective: string;
+  nextRunProtocol: { start: string; intervene: string; resume: string; success: string } | null;
+  comparison: RunComparison | null;
   chartObservations: unknown;
 }
 
@@ -100,7 +104,8 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     && input.effort !== null
     && input.effort <= 7
     && (input.immediateKnee === null || input.immediateKnee < 6)
-    && (durationRatio === null || durationRatio >= 0.9);
+    && (durationRatio === null || (durationRatio >= 0.9 && durationRatio <= 1.1))
+    && (!easyLike || ceiling === null || input.averageHr === null || input.averageHr <= ceiling);
   const progressionStatus = immediatelyEligible ? "pending_next_morning" : "not_eligible";
   const progressionReason = immediatelyEligible
     ? "Execution checks passed so far; progression still requires the next-morning knee score not to increase and acceptable recovery."
@@ -117,8 +122,18 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       ? input.chartObservations.prescribedHrCeilingPattern.value
       : null;
   let improvementDirective = "Repeat this execution and collect another comparable run before changing the target.";
+  let nextRunProtocol: RunEvidencePackage["nextRunProtocol"] = null;
   if (easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling) {
-    improvementDirective = "Slow earlier or use walk breaks sooner so the next easy run stays under the prescribed heart-rate ceiling.";
+    const startLow = floor ?? Math.max(1, ceiling - 10);
+    const startHigh = midpoint ?? ceiling - 5;
+    const earlyAction = Math.max(startLow, ceiling - 2);
+    improvementDirective = `Use an early HR-control protocol on the next comparable run: settle at ${startLow}-${startHigh} bpm and act before reaching the ${ceiling} bpm ceiling.`;
+    nextRunProtocol = {
+      start: `Keep the first 10 minutes around ${startLow}-${startHigh} bpm; pace is secondary.`,
+      intervene: `Slow down as HR approaches ${earlyAction} bpm. If it remains at or above ${ceiling} bpm for about two minutes, walk.`,
+      resume: `Resume easy running only after HR returns to about ${startLow}-${startHigh} bpm. In warm stroller conditions, planned walk breaks from the start are acceptable.`,
+      success: `Most of the visible HR chart stays below ${ceiling} bpm, average HR is at or below ${ceiling} bpm, and the run does not feel harder than intended.`,
+    };
   } else if (
     easyLike
     && midpoint !== null
@@ -156,7 +171,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       effort: input.effort,
       highestKneeDuring: input.highestKneeDuring,
       immediateKnee: input.immediateKnee,
-      morningKnee: input.morningKnee,
+      preRunMorningKnee: input.morningKnee,
       averageTemperatureF: input.averageTemperatureF,
       elevationGainFeet: input.elevationGainFeet,
       aerobicTrainingEffect: input.aerobicTrainingEffect,
@@ -168,6 +183,8 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     contextModifiers: context,
     dataQualityWarnings: warnings,
     improvementDirective,
+    nextRunProtocol,
+    comparison: input.comparison,
     chartObservations: input.chartObservations,
   };
 }

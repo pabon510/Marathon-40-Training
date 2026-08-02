@@ -8,6 +8,7 @@ import { runAnalysisResultSchema } from "@/domain/analysis/runAnalysisPrompt";
 import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import { RetryAnalysis } from "./retry-analysis";
 import { deleteScreenshotsAction, keepScreenshotsAction } from "./actions";
+import { formatDuration, formatPace } from "@/domain/metrics/pace";
 
 function verdictStyle(verdict: string) {
   if (verdict === "successful") return "from-emerald-950 via-emerald-800 to-teal-600";
@@ -84,10 +85,44 @@ export default async function RunAnalysisPage({ params }: { params: Promise<{ se
             </section>
           ) : null}
 
+          {evidence.comparison ? (
+            <section className="card">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-700">Compared with your most relevant prior run</p>
+              <h2 className="mt-1 font-bold text-slate-950">
+                {new Date(`${evidence.comparison.prior.localDate}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                {evidence.comparison.prior.isStroller ? " · stroller" : " · standard"}
+              </h2>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-slate-50 p-3"><span className="text-[10px] uppercase text-slate-500">Prior average HR</span><strong className="block text-lg">{evidence.comparison.prior.averageHr ?? "—"} bpm</strong></div>
+                <div className="rounded-xl bg-violet-50 p-3"><span className="text-[10px] uppercase text-violet-700">This run</span><strong className="block text-lg">{typeof evidence.actual.averageHr === "number" ? evidence.actual.averageHr : "—"} bpm</strong></div>
+                <div className="rounded-xl bg-slate-50 p-3"><span className="text-[10px] uppercase text-slate-500">Prior duration</span><strong className="block text-base">{evidence.comparison.prior.durationSeconds === null ? "—" : formatDuration(evidence.comparison.prior.durationSeconds)}</strong></div>
+                <div className="rounded-xl bg-violet-50 p-3"><span className="text-[10px] uppercase text-violet-700">This duration</span><strong className="block text-base">{typeof evidence.actual.durationSeconds === "number" ? formatDuration(evidence.actual.durationSeconds) : "—"}</strong></div>
+              </div>
+              {result.comparisonToPrior ? <p className="mt-3 text-sm leading-6 text-slate-700">{result.comparisonToPrior.text}</p> : null}
+              <p className="mt-2 text-xs text-slate-500">{evidence.comparison.selectionReason}</p>
+              {evidence.comparison.prior.paceSecondsPerMile !== null ? <p className="mt-1 text-xs text-slate-500">Prior pace: {formatPace(evidence.comparison.prior.paceSecondsPerMile)}. Pace remains secondary to heart rate for this comparison.</p> : null}
+            </section>
+          ) : null}
+
           <section className="rounded-2xl border border-brand-200 bg-brand-50 p-4">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-800">One focus for next time</p>
             <p className="mt-2 text-base font-semibold leading-6 text-brand-950">{result.primaryImprovement.text}</p>
           </section>
+
+          {evidence.nextRunProtocol ? (
+            <section className="overflow-hidden rounded-2xl border border-blue-200 bg-white">
+              <div className="bg-blue-950 p-4 text-white">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-200">Next-run playbook</p>
+                <p className="mt-1 text-sm text-blue-100">A concrete protocol for the next comparable easy or long run.</p>
+              </div>
+              <ol className="space-y-3 p-4 text-sm text-slate-700">
+                <li><strong className="text-slate-950">1. Start:</strong> {evidence.nextRunProtocol.start}</li>
+                <li><strong className="text-slate-950">2. Intervene:</strong> {evidence.nextRunProtocol.intervene}</li>
+                <li><strong className="text-slate-950">3. Resume:</strong> {evidence.nextRunProtocol.resume}</li>
+                <li className="rounded-xl bg-emerald-50 p-3 text-emerald-950"><strong>Success next time:</strong> {evidence.nextRunProtocol.success}</li>
+              </ol>
+            </section>
+          ) : null}
 
           {result.metricToVerify ? (
             <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">

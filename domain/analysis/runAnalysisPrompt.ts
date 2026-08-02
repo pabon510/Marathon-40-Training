@@ -3,8 +3,8 @@ import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import type { WorkoutKind } from "@/domain/types";
 
 export const RUN_ANALYSIS_MODEL = "gpt-5.6-luna";
-export const RUN_ANALYSIS_VERSION = "run-analysis-v1";
-export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v1";
+export const RUN_ANALYSIS_VERSION = "run-analysis-v2";
+export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v2";
 
 const evidenceStatementSchema = z.object({
   text: z.string(),
@@ -16,6 +16,7 @@ export const runAnalysisResultSchema = z.object({
   summary: z.string(),
   whatWentWell: z.array(evidenceStatementSchema),
   contextThatMatters: z.array(evidenceStatementSchema),
+  comparisonToPrior: evidenceStatementSchema.nullable(),
   primaryImprovement: evidenceStatementSchema,
   metricToVerify: evidenceStatementSchema.nullable(),
   progressionExplanation: z.string(),
@@ -37,6 +38,13 @@ Non-negotiable rules:
 - Treat questionable cadence or wrist-sensor readings as values to verify, not problems to fix.
 - Do not diagnose pain or injury and do not alter the training plan.
 - Give exactly one primary improvement. It must implement improvementDirective, not introduce a new coaching priority.
+- When comparison is present, explicitly quantify the most useful difference (especially average-HR difference for easy/long runs), name the prior date and context, and acknowledge duration or workout-type differences. Do not compare incompatible paces.
+- nextRunProtocol is authoritative and should be reflected in primaryImprovement. Do not weaken it into vague advice such as merely "slow down" or "walk sooner."
+- State the measurable success condition supplied in nextRunProtocol.
+- Never expose internal enum values such as harder_than_intended. Translate them into natural language.
+- Format duration for people (for example 1:13:25 or 73 minutes), never as a raw count of seconds.
+- Do not use a routine next-morning knee check as metricToVerify because the app captures it automatically. Cadence may receive at most one brief optional verification note and must not distract from a clear HR execution problem.
+- actual.preRunMorningKnee is the check-in before the run, never the following-morning result. Do not describe it as a post-run or next-morning observation.
 - Keep the report concise, specific, supportive, and candid. Avoid generic praise.
 - evidenceKeys must name exact top-level or nested evidence-package paths supporting each statement.
 - If evidence is limited, say so and lower confidence.
