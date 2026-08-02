@@ -26,6 +26,7 @@ const base: RunEvidenceInput = {
   chartObservations: {
     prescribedHrCeilingPattern: { value: "near_for_long_periods", confidence: "medium", evidence: "HR line near 150" },
   },
+  comparison: null,
 };
 
 describe("run evaluator", () => {
@@ -41,7 +42,13 @@ describe("run evaluator", () => {
   it("marks an easy run above its HR ceiling as harder than intended", () => {
     const result = evaluateRun({ ...base, isStroller: false, averageHr: 155, maximumCadenceSpm: 160 });
     expect(result.authoritativeVerdict).toBe("harder_than_intended");
-    expect(result.improvementDirective).toContain("walk breaks sooner");
+    expect(result.progressionStatus).toBe("not_eligible");
+    expect(result.improvementDirective).toContain("early HR-control protocol");
+    expect(result.nextRunProtocol).toEqual(expect.objectContaining({
+      start: expect.stringContaining("140-145 bpm"),
+      intervene: expect.stringContaining("148 bpm"),
+      success: expect.stringContaining("below 150 bpm"),
+    }));
   });
 
   it("does not qualify an incomplete run for progression", () => {

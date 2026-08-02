@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/types";
 import { evaluateRun, type RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import { selectComparableRun, type ComparableRunCandidate } from "@/domain/analysis/runComparison";
 
 type Client = SupabaseClient<Database>;
 
@@ -52,6 +53,62 @@ export async function buildRunEvidence(
     : null;
   const pace = runLog.pace_override_seconds_per_mile ?? runLog.calculated_pace_seconds_per_mile;
 
+  const { data: priorSessions, error: priorSessionError } = await supabase
+    .from("workout_sessions")
+    .select("id, local_date, planned_workout_id, overall_effort")
+    .eq("user_id", userId)
+    .eq("session_type", "run")
+    .lt("local_date", session.local_date)
+    .order("local_date", { ascending: false })
+    .limit(25);
+  if (priorSessionError) throw priorSessionError;
+  const priorSessionIds = (priorSessions ?? []).map((item) => item.id);
+  const priorPlannedIds = (priorSessions ?? []).map((item) => item.planned_workout_id).filter((id): id is string => id !== null);
+  const [priorLogsResult, priorPlansResult] = await Promise.all([
+    priorSessionIds.length
+      ? supabase.from("run_logs").select("*").in("workout_session_id", priorSessionIds)
+      : Promise.resolve({ data: [], error: null }),
+    priorPlannedIds.length
+      ? supabase.from("planned_workouts").select("id, workout_kind").in("id", priorPlannedIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (priorLogsResult.error) throw priorLogsResult.error;
+  if (priorPlansResult.error) throw priorPlansResult.error;
+  const sessionById = new Map((priorSessions ?? []).map((item) => [item.id, item]));
+  const kindByPlanId = new Map((priorPlansResult.data ?? []).map((item) => [item.id, item.workout_kind as WorkoutKind]));
+  const priorCandidates: ComparableRunCandidate[] = (priorLogsResult.data ?? []).flatMap((log) => {
+    const priorSession = sessionById.get(log.workout_session_id);
+    if (!priorSession) return [];
+    return [{
+      runLogId: log.id,
+      localDate: priorSession.local_date,
+      workoutKind: priorSession.planned_workout_id ? kindByPlanId.get(priorSession.planned_workout_id) ?? null : null,
+      runType: log.run_type,
+      isStroller: log.is_stroller,
+      durationSeconds: log.duration_seconds,
+      paceSecondsPerMile: log.pace_override_seconds_per_mile ?? log.calculated_pace_seconds_per_mile,
+      averageHr: log.average_hr,
+      maximumHr: log.maximum_hr,
+      effort: log.effort ?? priorSession.overall_effort,
+      averageTemperatureF: log.average_temperature_f,
+      immediateKnee: log.knee_immediately_after,
+    }];
+  });
+  const comparison = selectComparableRun({
+    runLogId: runLog.id,
+    localDate: session.local_date,
+    workoutKind: (planned?.workout_kind as WorkoutKind | undefined) ?? null,
+    runType: runLog.run_type,
+    isStroller: runLog.is_stroller,
+    durationSeconds: runLog.duration_seconds,
+    paceSecondsPerMile: pace,
+    averageHr: runLog.average_hr,
+    maximumHr: runLog.maximum_hr,
+    effort: runLog.effort ?? postCheckIn?.overall_effort ?? session.overall_effort,
+    averageTemperatureF: runLog.average_temperature_f,
+    immediateKnee: runLog.knee_immediately_after ?? postCheckIn?.knee_immediately_after ?? null,
+  }, priorCandidates);
+
   const evidence = evaluateRun({
     workoutKind: (planned?.workout_kind as WorkoutKind | undefined) ?? null,
     plannedDurationMinutes: planned?.planned_duration_minutes ?? null,
@@ -75,6 +132,7 @@ export async function buildRunEvidence(
     averageCadenceSpm: runLog.average_cadence_spm,
     maximumCadenceSpm: runLog.maximum_cadence_spm,
     chartObservations,
+    comparison,
   });
 
   const hasChartEvidence = Boolean(
@@ -139,7 +197,11 @@ export async function finalizePreviousRunAnalyses(
 
   for (const analysis of analyses ?? []) {
     const evidence = analysis.evidence_snapshot as unknown as RunEvidencePackage;
-    const runMorningKnee = typeof evidence?.actual?.morningKnee === "number" ? evidence.actual.morningKnee : null;
+    const runMorningKnee = typeof evidence?.actual?.preRunMorningKnee === "number"
+      ? evidence.actual.preRunMorningKnee
+      : typeof evidence?.actual?.morningKnee === "number"
+        ? evidence.actual.morningKnee
+        : null;
     const wasPending = evidence?.progressionStatus === "pending_next_morning";
     const kneeDidNotIncrease = runMorningKnee !== null && nextMorningKnee <= runMorningKnee;
     const successfulExposure = wasPending && kneeDidNotIncrease && recoveryAcceptable;
