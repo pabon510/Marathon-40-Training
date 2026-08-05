@@ -11,15 +11,16 @@ describe("recovery routines", () => {
     }
   });
 
-  it("links every gentle-yoga block to complete illustrated guidance", () => {
-    const gentleYoga = getRecoveryRoutine("gentle_yoga_20")!;
-    for (const movement of gentleYoga.movements) {
-      const libraryMovement = getRecoveryMovement(movement.exerciseSlug);
-      expect(libraryMovement?.setup.length).toBeGreaterThan(20);
-      expect(libraryMovement?.execution.length).toBeGreaterThan(20);
-      expect(libraryMovement?.cues).toHaveLength(3);
-      expect(libraryMovement?.mistakes).toHaveLength(3);
-      expect(libraryMovement?.imagePath).toMatch(/^\/exercises\/yoga\/.+\.png$/);
+  it("links every recovery block to complete illustrated guidance", () => {
+    for (const routine of RECOVERY_ROUTINES) {
+      for (const movement of routine.movements) {
+        const libraryMovement = getRecoveryMovement(movement.exerciseSlug);
+        expect(libraryMovement?.setup.length, movement.name).toBeGreaterThan(20);
+        expect(libraryMovement?.execution.length, movement.name).toBeGreaterThan(20);
+        expect(libraryMovement?.cues, movement.name).toHaveLength(3);
+        expect(libraryMovement?.mistakes, movement.name).toHaveLength(3);
+        expect(libraryMovement?.imagePath, movement.name).toMatch(/^\/exercises\/yoga\/.+\.png$/);
+      }
     }
   });
 });
