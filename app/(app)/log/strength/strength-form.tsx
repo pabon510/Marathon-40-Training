@@ -9,7 +9,7 @@ import { EFFORT_SCALE, KNEE_SCALE } from "@/domain/content/trainingScales";
 import { logStrengthAction, type LogStrengthFormState } from "./actions";
 import { ExerciseCard, initialEntry, summaryText, type ExerciseEntry } from "./exercise-card";
 import { metricLabel } from "@/domain/content/prescriptionMetric";
-import { parseStrengthDraft, STRENGTH_DRAFT_VERSION, strengthDraftStorageKey } from "./strength-draft";
+import { reconcileStrengthDraft, STRENGTH_DRAFT_VERSION, strengthDraftStorageKey } from "./strength-draft";
 
 const initialState: LogStrengthFormState = {};
 
@@ -60,7 +60,11 @@ export function StrengthLogForm({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const draft = parseStrengthDraft(window.sessionStorage.getItem(storageKey), exerciseIds);
+      const draft = reconcileStrengthDraft(
+        window.sessionStorage.getItem(storageKey),
+        exerciseIds,
+        items.map(initialEntry),
+      );
       if (draft) {
         setEntries(draft.entries);
         setExpandedIndex(draft.expandedIndex);
@@ -107,6 +111,19 @@ export function StrengthLogForm({
 
   function updateEntry(index: number, patch: Partial<ExerciseEntry>) {
     setEntries((prev) => prev.map((e, i) => (i === index ? { ...e, ...patch } : e)));
+  }
+
+  function persistDraftBeforeNavigation() {
+    window.sessionStorage.setItem(storageKey, JSON.stringify({
+      version: STRENGTH_DRAFT_VERSION,
+      exerciseIds,
+      entries,
+      expandedIndex,
+      effort,
+      highestKneeDuring,
+      kneeImmediatelyAfter,
+      unusualPain,
+    }));
   }
 
   function markDone(index: number) {
@@ -183,10 +200,11 @@ export function StrengthLogForm({
               onBack={i > 0 ? () => goBack(i) : null}
               substituteHref={
                 plannedWorkoutId
-                  ? `/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${item.ordinal}`
+                  ? `/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${item.ordinal}&returnTo=${encodeURIComponent("/log/strength")}`
                   : null
               }
               libraryHref={`/library?exercise=${encodeURIComponent(item.exercise.slug)}&returnTo=${encodeURIComponent("/log/strength")}`}
+              onBeforeNavigate={persistDraftBeforeNavigation}
             />
           </div>
         );

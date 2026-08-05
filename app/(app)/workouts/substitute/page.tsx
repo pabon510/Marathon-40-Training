@@ -29,6 +29,7 @@ export default async function SubstituteExercisePage({
   const plannedWorkoutId = typeof params.plannedWorkoutId === "string" ? params.plannedWorkoutId : "";
   const ordinal = Number(typeof params.ordinal === "string" ? params.ordinal : "");
   const rawReason = typeof params.reason === "string" ? params.reason : "different_exercise";
+  const returnTo = params.returnTo === "/log/strength" ? "/log/strength" : "/workouts";
   const reason: SubstitutionReason = isSubstitutionReason(rawReason) ? rawReason : "different_exercise";
   if (!plannedWorkoutId || !Number.isInteger(ordinal)) notFound();
 
@@ -70,7 +71,7 @@ export default async function SubstituteExercisePage({
   return (
     <div className="space-y-4">
       <div>
-        <Link href="/workouts" className="text-sm text-slate-500 underline">← Back to workout</Link>
+        <Link href={returnTo} className="text-sm text-slate-500 underline">← Back to workout</Link>
         <h1 className="mt-2 text-xl font-bold text-slate-900">Substitute exercise</h1>
         <p className="mt-1 text-sm text-slate-600">
           Replace {current.savedSubstitution?.originalExerciseName ?? current.exercise.name} for this workout only.
@@ -83,7 +84,7 @@ export default async function SubstituteExercisePage({
           {REASONS.map((option) => (
             <Link
               key={option}
-              href={`/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${ordinal}&reason=${option}`}
+              href={`/workouts/substitute?plannedWorkoutId=${encodeURIComponent(plannedWorkoutId)}&ordinal=${ordinal}&reason=${option}&returnTo=${encodeURIComponent(returnTo)}`}
               aria-current={option === reason ? "true" : undefined}
               className={option === reason ? "btn-primary justify-start" : "btn-secondary justify-start"}
             >
@@ -134,6 +135,7 @@ export default async function SubstituteExercisePage({
               <input type="hidden" name="ordinal" value={ordinal} />
               <input type="hidden" name="substituteSlug" value={candidate.exercise.slug} />
               <input type="hidden" name="reason" value={reason} />
+              <input type="hidden" name="returnTo" value={returnTo} />
               <button type="submit" className="btn-primary w-full">
                 Use {candidate.exercise.name}
               </button>
@@ -146,6 +148,7 @@ export default async function SubstituteExercisePage({
         <form action={restoreOriginalAction} className="card">
           <input type="hidden" name="plannedWorkoutId" value={plannedWorkoutId} />
           <input type="hidden" name="ordinal" value={ordinal} />
+          <input type="hidden" name="returnTo" value={returnTo} />
           <button type="submit" className="btn-secondary w-full">
             Restore {current.savedSubstitution.originalExerciseName}
           </button>

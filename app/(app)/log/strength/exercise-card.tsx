@@ -87,6 +87,7 @@ export function ExerciseCard({
   onBack,
   substituteHref,
   libraryHref,
+  onBeforeNavigate,
 }: {
   item: GuidedExerciseItem;
   index: number;
@@ -99,6 +100,7 @@ export function ExerciseCard({
   onBack?: (() => void) | null;
   substituteHref?: string | null;
   libraryHref?: string;
+  onBeforeNavigate?: () => void;
 }) {
   // Open by default: this card is the merged "view instructions + log the
   // set" screen, so there's no separate read-only guided-mode pass first.
@@ -145,6 +147,7 @@ export function ExerciseCard({
           </p>
           <Link
             href={libraryHref ?? `/library?exercise=${encodeURIComponent(item.exercise.slug)}`}
+            onClick={onBeforeNavigate}
             className="inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
           >
             View in Library
@@ -152,6 +155,7 @@ export function ExerciseCard({
           {substituteHref ? (
             <Link
               href={substituteHref}
+              onClick={onBeforeNavigate}
               className="ml-4 inline-flex min-h-touch items-center text-xs font-medium text-brand-700 underline"
             >
               Substitute

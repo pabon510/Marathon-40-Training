@@ -11,6 +11,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profileService";
 import { resolveWorkoutStrengthSection } from "@/lib/services/workoutDetailService";
 
+function safeReturnTo(value: FormDataEntryValue | null) {
+  return value === "/log/strength" ? value : "/workouts";
+}
+
 async function ownedWorkout(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, workoutId: string) {
   const { data } = await supabase
     .from("planned_workouts")
@@ -26,6 +30,7 @@ export async function saveSubstitutionAction(formData: FormData) {
   const ordinal = Number(formData.get("ordinal"));
   const substituteSlug = String(formData.get("substituteSlug") ?? "");
   const reasonValue = String(formData.get("reason") ?? "");
+  const returnTo = safeReturnTo(formData.get("returnTo"));
   if (!plannedWorkoutId || !Number.isInteger(ordinal) || ordinal < 0 || !isSubstitutionReason(reasonValue)) {
     throw new Error("Invalid substitution request.");
   }
@@ -89,12 +94,13 @@ export async function saveSubstitutionAction(formData: FormData) {
   revalidatePath("/workouts");
   revalidatePath("/log/strength");
   revalidatePath("/plan", "layout");
-  redirect("/workouts");
+  redirect(returnTo);
 }
 
 export async function restoreOriginalAction(formData: FormData) {
   const plannedWorkoutId = String(formData.get("plannedWorkoutId") ?? "");
   const ordinal = Number(formData.get("ordinal"));
+  const returnTo = safeReturnTo(formData.get("returnTo"));
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in.");
@@ -109,5 +115,5 @@ export async function restoreOriginalAction(formData: FormData) {
   revalidatePath("/workouts");
   revalidatePath("/log/strength");
   revalidatePath("/plan", "layout");
-  redirect("/workouts");
+  redirect(returnTo);
 }
