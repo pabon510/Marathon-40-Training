@@ -1,4 +1,5 @@
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import Image from "next/image";
 import type { StrengthSection } from "@/lib/services/workoutDetailService";
 import { LoadGuidance } from "@/components/load-guidance";
 import { LocationToggle } from "@/components/location-toggle";
@@ -10,8 +11,46 @@ import { allowsStrollerContext, runContextGuidance, type RunContext } from "@/do
 import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
 import { getStrengthWarmup } from "@/domain/content/strengthWarmups";
 import { StrengthWarmupCard } from "@/components/strength-warmup";
+import { getRecoveryMovement } from "@/domain/content/recoveryMovementLibrary";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
+
+function RecoveryMovementCard({
+  movement,
+  index,
+}: {
+  movement: NonNullable<ReturnType<typeof getRecoveryRoutine>>["movements"][number];
+  index: number;
+}) {
+  const libraryMovement = getRecoveryMovement(movement.exerciseSlug);
+  return (
+    <li className="overflow-hidden rounded-lg bg-white ring-1 ring-teal-100">
+      {libraryMovement ? (
+        <Image
+          src={libraryMovement.imagePath}
+          alt={libraryMovement.imageAlt}
+          width={800}
+          height={800}
+          className="aspect-[16/9] w-full bg-amber-50 object-cover"
+        />
+      ) : null}
+      <div className="p-3">
+        <p className="text-sm font-semibold text-slate-900">
+          {index + 1}. {movement.name} · {movement.minutes} min
+        </p>
+        <p className="mt-1 text-xs text-slate-600">{movement.guidance}</p>
+        {libraryMovement ? (
+          <Link
+            href={`/library?exercise=${encodeURIComponent(libraryMovement.slug)}`}
+            className="mt-2 inline-flex min-h-touch items-center text-xs font-semibold text-brand-700 underline"
+          >
+            View instructions in Library
+          </Link>
+        ) : null}
+      </div>
+    </li>
+  );
+}
 
 /**
  * The body of a single day's workout: run prescription (with its HR range,
@@ -152,12 +191,7 @@ export function WorkoutDetailView({
           <p className="mt-3 text-xs font-semibold text-teal-900">Target effort: 1–3/10 · Home</p>
           <ol className="mt-3 space-y-3">
             {recoveryRoutine.movements.map((movement, index) => (
-              <li key={movement.name} className="rounded-lg bg-white p-3 ring-1 ring-teal-100">
-                <p className="text-sm font-semibold text-slate-900">
-                  {index + 1}. {movement.name} · {movement.minutes} min
-                </p>
-                <p className="mt-1 text-xs text-slate-600">{movement.guidance}</p>
-              </li>
+              <RecoveryMovementCard key={movement.name} movement={movement} index={index} />
             ))}
           </ol>
           <p className="mt-3 text-xs text-slate-600">

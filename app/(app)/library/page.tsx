@@ -26,7 +26,7 @@ export default async function ExerciseLibraryPage({
         {safeReturnTo ? <Link href={safeReturnTo} className="mb-3 inline-flex min-h-touch items-center text-sm font-semibold text-brand-700 underline">← Return to workout</Link> : null}
         <h1 className="text-xl font-bold text-slate-900">Exercise library</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Review exercise setup, form guidance, loading, and approved alternatives.
+          Review strength exercises, recovery movements, form guidance, and approved alternatives.
         </p>
       </div>
       <ExerciseLibraryBrowser

@@ -1,4 +1,5 @@
 import { EXERCISES, getExerciseMetadataV2, type PrescriptionMetric } from "./exerciseLibrary";
+import { RECOVERY_MOVEMENTS } from "./recoveryMovementLibrary";
 
 export interface ExerciseLibraryEntry {
   slug: string;
@@ -21,12 +22,16 @@ export interface ExerciseLibraryEntry {
   progressionNames: string[];
   regressionNames: string[];
   substitutionNames: string[];
+  category: "strength" | "recovery";
+  preferenceEligible: boolean;
+  referenceImagePath: string | null;
+  referenceImageAlt: string | null;
 }
 
 /** Read-only, user-facing catalogue. Ambiguous legacy rows stay hidden. */
 export function buildExerciseLibraryEntries(): ExerciseLibraryEntry[] {
   const nameBySlug = new Map(EXERCISES.map((exercise) => [exercise.slug, exercise.name]));
-  return EXERCISES.filter((exercise) => {
+  const strengthEntries: ExerciseLibraryEntry[] = EXERCISES.filter((exercise) => {
     const metadata = getExerciseMetadataV2(exercise);
     return metadata.activeForNewPlans && !metadata.legacyDisplayOnly;
   })
@@ -55,9 +60,39 @@ export function buildExerciseLibraryEntries(): ExerciseLibraryEntry[] {
         progressionNames: names(metadata.progressionExerciseSlugs),
         regressionNames: names(metadata.regressionExerciseSlugs),
         substitutionNames: names(metadata.substitutionExerciseSlugs),
+        category: "strength",
+        preferenceEligible: true,
+        referenceImagePath: null,
+        referenceImageAlt: null,
       };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    });
+  const recoveryEntries: ExerciseLibraryEntry[] = RECOVERY_MOVEMENTS.map((movement) => ({
+    slug: movement.slug,
+    name: movement.name,
+    movementPattern: movement.movementPattern,
+    targetMuscles: movement.targetAreas,
+    equipment: ["yoga mat"],
+    locations: ["home"],
+    setup: movement.setup,
+    execution: movement.execution,
+    cues: movement.cues,
+    mistakes: movement.mistakes,
+    stopSubstituteGuidance: movement.stopGuidance,
+    allowedLoadTypes: ["bodyweight"],
+    loadingInstructions: "Use a comfortable, pain-free range. No external load is needed.",
+    loadPosition: "No external load",
+    startLoadNote: "This is a recovery movement, not a strength progression.",
+    repBasis: "total",
+    prescriptionMetric: "breaths",
+    progressionNames: [],
+    regressionNames: [],
+    substitutionNames: [],
+    category: "recovery",
+    preferenceEligible: false,
+    referenceImagePath: movement.imagePath,
+    referenceImageAlt: movement.imageAlt,
+  }));
+  return [...strengthEntries, ...recoveryEntries].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export interface ExerciseLibraryFilters {
@@ -68,21 +103,24 @@ export interface ExerciseLibraryFilters {
   targetMuscle: string;
 }
 
+function normalizedSearchText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 export function filterExerciseLibrary(
   entries: ExerciseLibraryEntry[],
   filters: ExerciseLibraryFilters,
 ): ExerciseLibraryEntry[] {
-  const query = filters.query.trim().toLowerCase();
+  const query = normalizedSearchText(filters.query);
   return entries.filter((entry) => {
-    const searchable = [
+    const searchable = normalizedSearchText([
       entry.name,
       entry.movementPattern,
       ...entry.targetMuscles,
       ...entry.equipment,
       ...entry.substitutionNames,
     ]
-      .join(" ")
-      .toLowerCase();
+      .join(" "));
     const locationMatch =
       filters.location === "all" ||
       entry.locations.includes(filters.location) ||
@@ -96,4 +134,3 @@ export function filterExerciseLibrary(
     );
   });
 }
-

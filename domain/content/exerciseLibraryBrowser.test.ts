@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EXERCISES, getExerciseMetadataV2 } from "./exerciseLibrary";
 import { buildExerciseLibraryEntries, filterExerciseLibrary } from "./exerciseLibraryBrowser";
+import { RECOVERY_MOVEMENTS } from "./recoveryMovementLibrary";
 
 describe("exercise library browser catalogue", () => {
   const entries = buildExerciseLibraryEntries();
@@ -10,9 +11,22 @@ describe("exercise library browser catalogue", () => {
       const metadata = getExerciseMetadataV2(exercise);
       return metadata.activeForNewPlans && !metadata.legacyDisplayOnly;
     });
-    expect(entries).toHaveLength(expected.length);
+    expect(entries).toHaveLength(expected.length + RECOVERY_MOVEMENTS.length);
     expect(entries.some((entry) => entry.slug === "farmer_suitcase_carry")).toBe(false);
     expect(entries.some((entry) => entry.slug === "farmer_carry")).toBe(true);
+  });
+
+  it("includes searchable illustrated recovery movements", () => {
+    const filtered = filterExerciseLibrary(entries, {
+      query: "figure four",
+      location: "home",
+      movementPattern: "",
+      equipment: "yoga mat",
+      targetMuscle: "",
+    });
+    expect(filtered.map((entry) => entry.slug)).toEqual(["supine_figure_four"]);
+    expect(filtered[0]).toMatchObject({ category: "recovery", preferenceEligible: false });
+    expect(filtered[0]?.referenceImagePath).toContain("supine-figure-four.png");
   });
 
   it("resolves relationship slugs to user-facing names", () => {
@@ -45,4 +59,3 @@ describe("exercise library browser catalogue", () => {
     }
   });
 });
-

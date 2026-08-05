@@ -1,4 +1,5 @@
 export interface RecoveryMovement {
+  exerciseSlug?: string;
   name: string;
   minutes: number;
   guidance: string;
@@ -47,12 +48,12 @@ export const RECOVERY_ROUTINES: RecoveryRoutine[] = [
     durationMinutes: 20,
     description: "A low-intensity whole-body flow with no performance target.",
     movements: [
-      { name: "Breathing + child’s pose", minutes: 3, guidance: "Settle into a comfortable position; do not force depth." },
-      { name: "Cat-cow + thoracic rotation", minutes: 4, guidance: "Move slowly with your breath." },
-      { name: "Low lunge flow", minutes: 5, guidance: "Use padding and shorten the stance if the knee is uncomfortable." },
-      { name: "Down dog to calf pedal", minutes: 3, guidance: "Keep knees soft and alternate heels gently." },
-      { name: "Supine figure-four stretch", minutes: 3, guidance: "Keep the stretch mild and even between sides." },
-      { name: "Relaxed breathing", minutes: 2, guidance: "Finish lying or seated with slow breathing." },
+      { exerciseSlug: "childs_pose_breathing", name: "Breathing + Child’s Pose", minutes: 3, guidance: "Settle into a comfortable position; do not force depth." },
+      { exerciseSlug: "cat_cow_thoracic_rotation", name: "Cat–Cow + Thoracic Rotation", minutes: 4, guidance: "Move slowly with your breath." },
+      { exerciseSlug: "gentle_low_lunge_flow", name: "Gentle Low-Lunge Flow", minutes: 5, guidance: "Use padding and shorten the stance if the knee is uncomfortable." },
+      { exerciseSlug: "down_dog_calf_pedal", name: "Down Dog to Calf Pedal", minutes: 3, guidance: "Keep knees soft and alternate heels gently." },
+      { exerciseSlug: "supine_figure_four", name: "Supine Figure-Four Stretch", minutes: 3, guidance: "Keep the stretch mild and even between sides." },
+      { exerciseSlug: "relaxed_diaphragmatic_breathing", name: "Relaxed Diaphragmatic Breathing", minutes: 2, guidance: "Finish lying or seated with slow breathing." },
     ],
   },
   {
