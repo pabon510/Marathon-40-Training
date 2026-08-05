@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState, useTransition } from "react";
 import {
   filterExerciseLibrary,
@@ -107,7 +108,7 @@ function ExerciseDetails({
         <div>
           <h3 className="text-sm font-semibold text-slate-900">{exercise.name}</h3>
           <p className="mt-1 text-xs text-slate-500">
-            {label(exercise.movementPattern)} · {locationLabel(exercise.locations)}
+            {exercise.category === "recovery" ? "Recovery" : "Strength"} · {label(exercise.movementPattern)} · {locationLabel(exercise.locations)}
           </p>
           <div className="mt-2 flex flex-wrap gap-1">
             {exercise.targetMuscles.map((muscle) => (
@@ -123,12 +124,27 @@ function ExerciseDetails({
       </summary>
 
       <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
-        <PreferenceControls
-          exercise={exercise}
-          preference={preference}
-          pending={pending}
-          onChange={onPreferenceChange}
-        />
+        {exercise.referenceImagePath ? (
+          <Image
+            src={exercise.referenceImagePath}
+            alt={exercise.referenceImageAlt ?? `${exercise.name} reference`}
+            width={800}
+            height={800}
+            className="aspect-square w-full rounded-xl bg-amber-50 object-cover ring-1 ring-slate-200"
+          />
+        ) : null}
+        {exercise.preferenceEligible ? (
+          <PreferenceControls
+            exercise={exercise}
+            preference={preference}
+            pending={pending}
+            onChange={onPreferenceChange}
+          />
+        ) : (
+          <p className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900">
+            Recovery movement · Keep the effort gentle and use a comfortable range.
+          </p>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipment</h4>
@@ -139,9 +155,15 @@ function ExerciseDetails({
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prescription</h4>
             <p className="mt-1 text-sm text-slate-700">
-              {metricLabel(exercise.prescriptionMetric)}
-              {exercise.repBasis === "per_side" ? " per side" : ""} ·{" "}
-              {exercise.allowedLoadTypes.map(label).join(" or ")}
+              {exercise.category === "recovery" ? (
+                "Timed gentle movement · No external load"
+              ) : (
+                <>
+                  {metricLabel(exercise.prescriptionMetric)}
+                  {exercise.repBasis === "per_side" ? " per side" : ""} ·{" "}
+                  {exercise.allowedLoadTypes.map(label).join(" or ")}
+                </>
+              )}
             </p>
           </div>
         </div>
