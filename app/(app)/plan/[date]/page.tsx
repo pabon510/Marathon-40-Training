@@ -11,6 +11,7 @@ import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import { WorkoutDetailView } from "@/components/workout-detail";
 import { isValidLocalDate, previewNote, relationToToday } from "@/lib/planPreview";
+import { fuelingPlanForWorkout } from "@/lib/services/fuelingService";
 
 export default async function PlanDayPage({ params }: { params: Promise<{ date: string }> }) {
   const { date } = await params;
@@ -33,6 +34,7 @@ export default async function PlanDayPage({ params }: { params: Promise<{ date: 
   const location = workout.location_choice === "gym" ? "gym" : "home";
 
   const strength = await resolveWorkoutStrengthSection(supabase, user!.id, profile, workout, location);
+  const fuelingPlan = fuelingPlanForWorkout(profile, kind, workout.planned_duration_minutes);
 
   const dateLabel = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
     weekday: "long",
@@ -74,6 +76,7 @@ export default async function PlanDayPage({ params }: { params: Promise<{ date: 
         showLocationToggle={relation !== "past"}
         runContext={workout.run_context}
         recoveryRoutineSlug={workout.recovery_routine_slug}
+        fuelingPlan={fuelingPlan}
       />
 
       {relation === "today" ? (

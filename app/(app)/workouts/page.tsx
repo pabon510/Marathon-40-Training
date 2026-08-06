@@ -9,6 +9,7 @@ import { WORKOUT_KIND_LABELS } from "@/lib/labels";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import { WorkoutDetailView } from "@/components/workout-detail";
+import { fuelingPlanForWorkout } from "@/lib/services/fuelingService";
 
 const STRENGTH_KINDS: WorkoutKind[] = ["strength_a", "strength_b", "strength_full", "upper_core_safety"];
 
@@ -38,6 +39,7 @@ export default async function WorkoutsPage() {
   const location = workout.location_choice === "gym" ? "gym" : "home";
 
   const strength = await resolveWorkoutStrengthSection(supabase, user!.id, profile, workout, location);
+  const fuelingPlan = fuelingPlanForWorkout(profile, kind, workout.planned_duration_minutes);
 
   return (
     <div className="space-y-4">
@@ -57,6 +59,7 @@ export default async function WorkoutsPage() {
         showLocationToggle
         runContext={workout.run_context}
         recoveryRoutineSlug={workout.recovery_routine_slug}
+        fuelingPlan={fuelingPlan}
       />
 
       <Link

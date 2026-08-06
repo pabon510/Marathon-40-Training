@@ -10,6 +10,7 @@ import { evaluateDailyAdaptation } from "@/domain/adaptation/evaluate";
 import { todayLocalDate } from "@/lib/date";
 import type { AvailableTime, RunType, WorkoutKind } from "@/domain/types";
 import { isScaleScore } from "@/domain/content/trainingScales";
+import { fuelingPlanForWorkout, parseFuelingLogForm, saveWorkoutFuelingLog } from "@/lib/services/fuelingService";
 
 export interface LogRunFormState {
   error?: string;
@@ -17,6 +18,7 @@ export interface LogRunFormState {
   tomorrowPreview?: string;
   runLogId?: string;
   sessionId?: string;
+  fuelingWarning?: string;
 }
 
 function optionalNumber(formData: FormData, name: string): number | null {
@@ -228,6 +230,25 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
       notes,
     });
 
+    const fuelingKind = (plannedWorkout?.workout_kind ?? "easy_run") as WorkoutKind;
+    const fuelingDurationMinutes = plannedWorkout?.planned_duration_minutes
+      ?? (durationSeconds ? Math.round(durationSeconds / 60) : 0);
+    const fuelingPlan = fuelingPlanForWorkout(profile, fuelingKind, fuelingDurationMinutes);
+    let fuelingWarning: string | undefined;
+    try {
+      await saveWorkoutFuelingLog(
+        supabase,
+        user.id,
+        sessionId,
+        fuelingPlan,
+        parseFuelingLogForm(formData),
+      );
+    } catch {
+      // Fueling is optional context and must never erase or hide a successfully
+      // completed run. Surface the problem while preserving the workout.
+      fuelingWarning = "The run was saved, but its optional fueling check-in could not be attached.";
+    }
+
     if (plannedWorkout) {
       const newStatus = completedFull ? "completed" : "partial";
       await supabase
@@ -266,7 +287,7 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
     revalidatePath("/today");
     revalidatePath("/plan");
     revalidatePath("/progress");
-    return { success: true, tomorrowPreview, runLogId, sessionId };
+    return { success: true, tomorrowPreview, runLogId, sessionId, fuelingWarning };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save run log." };
   }

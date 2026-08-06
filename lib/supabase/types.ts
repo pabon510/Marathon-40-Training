@@ -47,7 +47,34 @@ export interface ProfileRow {
   default_available_weekdays: string[];
   equipment: Json;
   reminder_preferences: Json;
+  body_weight_kg: number | null;
+  preferred_weight_unit: "lb" | "kg";
+  typical_daily_caffeine_mg: number | null;
+  caffeine_sensitivity: "low" | "normal" | "high" | "avoid";
+  caffeine_cutoff_hour: number | null;
+  dietary_restrictions: string[];
+  lactose_tolerant: boolean | null;
   baseline_version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkoutFuelingLogRow {
+  id: string;
+  user_id: string;
+  workout_session_id: string;
+  rules_version: string;
+  recommendation_snapshot: Json;
+  pre_intake: "meal" | "snack" | "gel" | "nothing" | "other" | "not_sure" | null;
+  pre_timing: "under_30" | "30_60" | "1_2_hours" | "2_4_hours" | "over_4_hours" | "not_sure" | null;
+  gel_100_count: number;
+  gel_100_caf_count: number;
+  fluid_intake: "none" | "some" | "planned_amount" | "not_sure" | null;
+  post_recovery: "shake_only" | "shake_plus_carb" | "meal" | "snack" | "nothing_yet" | "other" | null;
+  post_timing: "under_30" | "30_60" | "1_2_hours" | "over_2_hours" | "not_yet" | null;
+  gi_response: "comfortable" | "mild_issue" | "significant_issue" | "not_sure" | null;
+  energy_response: "steady" | "faded" | "too_full" | "not_sure" | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -529,6 +556,10 @@ export interface Database {
           PostWorkoutCheckInRow,
           "workout_session_id" | "overall_effort" | "highest_knee_during" | "knee_immediately_after" | "completed_full" | "expectation_result"
         >
+      >;
+      workout_fueling_logs: TableDef<
+        WorkoutFuelingLogRow,
+        Insertable<WorkoutFuelingLogRow, "user_id" | "workout_session_id" | "rules_version">
       >;
       exercise_definitions: TableDef<
         ExerciseDefinitionRow,

@@ -28,9 +28,10 @@ export async function buildRunEvidence(
   if (sessionError) throw sessionError;
   if (!session) return null;
 
-  const [{ data: postCheckIn }, { data: runMorningCheckIn }, plannedResult, importResult] = await Promise.all([
+  const [{ data: postCheckIn }, { data: runMorningCheckIn }, { data: fuelingLog }, plannedResult, importResult] = await Promise.all([
     supabase.from("post_workout_check_ins").select("*").eq("workout_session_id", session.id).maybeSingle(),
     supabase.from("morning_check_ins").select("knee").eq("user_id", userId).eq("local_date", session.local_date).order("check_in_time", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("workout_fueling_logs").select("gel_100_count, gel_100_caf_count, post_recovery, gi_response, energy_response").eq("workout_session_id", session.id).maybeSingle(),
     session.planned_workout_id
       ? supabase.from("planned_workouts").select("*").eq("id", session.planned_workout_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -133,6 +134,13 @@ export async function buildRunEvidence(
     maximumCadenceSpm: runLog.maximum_cadence_spm,
     chartObservations,
     comparison,
+    fueling: fuelingLog ? {
+      gel100Count: fuelingLog.gel_100_count,
+      gel100CafCount: fuelingLog.gel_100_caf_count,
+      postRecovery: fuelingLog.post_recovery,
+      giResponse: fuelingLog.gi_response,
+      energyResponse: fuelingLog.energy_response,
+    } : null,
   });
 
   const hasChartEvidence = Boolean(

@@ -27,6 +27,13 @@ export interface RunEvidenceInput {
   maximumCadenceSpm: number | null;
   chartObservations: unknown;
   comparison: RunComparison | null;
+  fueling?: {
+    gel100Count: number;
+    gel100CafCount: number;
+    postRecovery: string | null;
+    giResponse: string | null;
+    energyResponse: string | null;
+  } | null;
 }
 
 export type RunVerdict =
@@ -81,6 +88,17 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   if (input.averageTemperatureF !== null && input.averageTemperatureF >= 75) context.push(`Warm conditions: average temperature was ${input.averageTemperatureF}°F.`);
   if (input.elevationGainFeet !== null && input.elevationGainFeet >= 150) context.push(`Meaningful climbing: ${input.elevationGainFeet} feet of elevation gain.`);
   if (input.runType === "run_walk") context.push("Planned or recorded run-walk execution.");
+  if (input.fueling) {
+    const carbohydrateFromGels = (input.fueling.gel100Count + input.fueling.gel100CafCount) * 25;
+    const caffeineFromGels = input.fueling.gel100CafCount * 100;
+    if (carbohydrateFromGels > 0) {
+      findings.push(`Logged approximately ${carbohydrateFromGels} g carbohydrate from Maurten gels during the run.`);
+    }
+    if (caffeineFromGels > 0) context.push(`Caffeinated gel intake contributed approximately ${caffeineFromGels} mg caffeine.`);
+    if (input.fueling.giResponse === "mild_issue") context.push("Fueling log reported mild stomach trouble.");
+    if (input.fueling.giResponse === "significant_issue") context.push("Fueling log reported significant stomach trouble.");
+    if (input.fueling.energyResponse === "faded") context.push("Fueling log reported fading energy.");
+  }
 
   if (
     input.averageCadenceSpm !== null
@@ -178,6 +196,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       anaerobicTrainingEffect: input.anaerobicTrainingEffect,
       averageCadenceSpm: input.averageCadenceSpm,
       maximumCadenceSpm: input.maximumCadenceSpm,
+      fueling: input.fueling ?? null,
     },
     deterministicFindings: findings,
     contextModifiers: context,

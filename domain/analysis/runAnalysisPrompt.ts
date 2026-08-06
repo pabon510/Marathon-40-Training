@@ -3,8 +3,8 @@ import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import type { WorkoutKind } from "@/domain/types";
 
 export const RUN_ANALYSIS_MODEL = "gpt-5.6-luna";
-export const RUN_ANALYSIS_VERSION = "run-analysis-v2";
-export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v2";
+export const RUN_ANALYSIS_VERSION = "run-analysis-v3";
+export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v3";
 
 const evidenceStatementSchema = z.object({
   text: z.string(),
@@ -34,6 +34,8 @@ Non-negotiable rules:
 - Chart observations are qualitative and must retain their supplied confidence.
 - Separate execution from context. Heat, stroller use, elevation, and walk breaks may explain cost but do not erase the prescribed target.
 - Pace from a stroller run may be compared only with stroller runs. Never call a stroller pace slow.
+- Use logged fueling only as observed context. Do not infer the nutrients in ordinary meals or claim that fueling caused performance from one run.
+- Distinguish Gel 100 (25 g carbohydrate, no caffeine) from Gel 100 CAF 100 (25 g carbohydrate and 100 mg caffeine).
 - Maximum HR alone does not prove poor execution. Average HR alone does not prove time under a ceiling.
 - Treat questionable cadence or wrist-sensor readings as values to verify, not problems to fix.
 - Do not diagnose pain or injury and do not alter the training plan.

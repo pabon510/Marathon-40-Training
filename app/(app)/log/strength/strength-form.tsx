@@ -10,6 +10,7 @@ import { logStrengthAction, type LogStrengthFormState } from "./actions";
 import { ExerciseCard, initialEntry, summaryText, type ExerciseEntry } from "./exercise-card";
 import { metricLabel } from "@/domain/content/prescriptionMetric";
 import { reconcileStrengthDraft, STRENGTH_DRAFT_VERSION, strengthDraftStorageKey } from "./strength-draft";
+import { FuelingLogFields } from "@/components/fueling-log-fields";
 
 const initialState: LogStrengthFormState = {};
 
@@ -102,6 +103,7 @@ export function StrengthLogForm({
     return (
       <div className="card space-y-2">
         <p className="text-sm font-semibold text-safety-ok">Strength workout logged.</p>
+        {state.fuelingWarning ? <p className="text-sm text-amber-800">{state.fuelingWarning}</p> : null}
         <Link href="/history" className="text-sm text-brand-700 underline">
           View or correct it in history
         </Link>
@@ -244,6 +246,7 @@ export function StrengthLogForm({
           <input type="checkbox" name="unplanned" />
           This is unplanned / extra
         </label>
+        <FuelingLogFields includeDuringRun={false} />
         <div>
           <label htmlFor="notes" className="field-label">
             Notes (optional)

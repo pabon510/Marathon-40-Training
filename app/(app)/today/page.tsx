@@ -11,6 +11,8 @@ import { ShorterAlternativeButton } from "./shorter-alternative-button";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
 import { canUseShorterAlternative, shorterAlternativeMinutes } from "@/domain/planning/shorterAlternative";
+import { fuelingPlanForWorkout } from "@/lib/services/fuelingService";
+import { FuelingPlanCard } from "@/components/fueling-plan-card";
 
 const STRENGTH_KINDS = new Set(["strength_a", "strength_b", "strength_full", "combined_short", "upper_core_safety"]);
 
@@ -181,6 +183,7 @@ export default async function TodayPage() {
     status: workout.status,
     plannedMinutes: workout.planned_duration_minutes,
   });
+  const fuelingPlan = fuelingPlanForWorkout(profile, kind, workout.planned_duration_minutes);
 
   const [{ data: latestChange }, { data: latestSession }] = await Promise.all([
     supabase
@@ -284,6 +287,8 @@ export default async function TodayPage() {
           </Link>
         )}
       </section>
+
+      <FuelingPlanCard plan={fuelingPlan} />
 
       {!completed ? (
         <section className={`rounded-2xl p-4 ring-1 ${latestChange ? "bg-amber-50 ring-amber-200" : "bg-emerald-50 ring-emerald-200"}`}>

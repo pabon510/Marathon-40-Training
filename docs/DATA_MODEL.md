@@ -1,5 +1,24 @@
 # Data Model
 
+## Workout fueling additions
+
+`profiles` stores optional fueling inputs used for deterministic recommendations: private body weight, preferred
+weight unit, typical daily caffeine, caffeine sensitivity and cutoff, dietary restrictions, and milk-shake tolerance.
+Weight is a calculation input, not a Progress-screen body measurement.
+
+`workout_fueling_logs` is an optional one-to-one child of `workout_sessions`. It preserves the rules version and
+recommendation snapshot shown for that session, then records approximate choices rather than requiring calorie or
+macro tracking:
+
+- meal/snack/none and approximate pre-workout timing
+- number of Maurten Gel 100 servings (25 g carbohydrate, no caffeine)
+- number of Maurten Gel 100 CAF 100 servings (25 g carbohydrate and 100 mg caffeine)
+- approximate fluids
+- protein shake plus carbohydrate, meal, snack, or nothing yet after training
+- approximate recovery timing, stomach response, and energy response
+
+The table has RLS and never updates the associated workout history.
+
 Use UUID primary keys, `created_at`/`updated_at` timestamps, and `user_id` on user-owned records. RLS must restrict every record to `auth.uid() = user_id`. Enums may be Postgres enums or checked text columns.
 
 ## Core tables
