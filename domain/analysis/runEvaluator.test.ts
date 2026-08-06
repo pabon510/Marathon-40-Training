@@ -56,4 +56,21 @@ describe("run evaluator", () => {
     expect(result.authoritativeVerdict).toBe("incomplete");
     expect(result.progressionStatus).toBe("not_eligible");
   });
+
+  it("adds product-based fueling facts without claiming causation", () => {
+    const result = evaluateRun({
+      ...base,
+      fueling: {
+        gel100Count: 1,
+        gel100CafCount: 1,
+        postRecovery: "shake_plus_carb",
+        giResponse: "mild_issue",
+        energyResponse: "faded",
+      },
+    });
+    expect(result.deterministicFindings.join(" ")).toContain("50 g carbohydrate");
+    expect(result.contextModifiers.join(" ")).toContain("100 mg caffeine");
+    expect(result.contextModifiers.join(" ")).toContain("mild stomach trouble");
+    expect(result.contextModifiers.join(" ")).toContain("fading energy");
+  });
 });

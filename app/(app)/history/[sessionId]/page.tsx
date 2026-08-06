@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getSessionDetail } from "@/lib/services/historyService";
 import { RunEditForm } from "./run-edit-form";
 import { StrengthEditForm } from "./strength-edit-form";
+import { FuelingLogSummary } from "@/components/fueling-log-summary";
 
 export default async function EditSessionPage({
   params,
@@ -37,6 +38,8 @@ export default async function EditSessionPage({
           recorded in the audit history. Editing only the notes changes nothing else.
         </p>
       </div>
+
+      {detail.fuelingLog ? <FuelingLogSummary log={detail.fuelingLog} /> : null}
 
       {detail.session.session_type === "run" ? (
         <>

@@ -13,6 +13,11 @@ export function SettingsForm({ profile }: { profile: ProfileRow }) {
   const equipment = profile.equipment as {
     home?: { dumbbellsLb?: number[]; bands?: boolean; bench?: boolean; adjustableKettlebellLb?: number[] };
   };
+  const displayedWeight = profile.body_weight_kg === null
+    ? ""
+    : profile.preferred_weight_unit === "lb"
+      ? (profile.body_weight_kg * 2.2046226218).toFixed(1)
+      : profile.body_weight_kg.toFixed(1);
 
   return (
     <form action={formAction} className="card space-y-5">
@@ -100,6 +105,62 @@ export function SettingsForm({ profile }: { profile: ProfileRow }) {
         Provisional — based on Garmin zones and wrist optical HR. Change only after a deliberate review, not
         day-to-day.
       </p>
+
+      <fieldset className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+        <legend className="px-1 text-sm font-bold text-emerald-950">Workout fueling profile</legend>
+        <p className="text-xs leading-5 text-emerald-900">
+          Used only to tailor workout fueling. Weight is not shown as a progress metric. The app uses approximate
+          foods and servings rather than requiring calorie or macro tracking.
+        </p>
+        <div className="grid grid-cols-[1fr_7rem] gap-3">
+          <div>
+            <label htmlFor="bodyWeight" className="field-label">Current weight (optional)</label>
+            <input id="bodyWeight" name="bodyWeight" type="number" inputMode="decimal" step="0.1" className="text-input" defaultValue={displayedWeight} />
+          </div>
+          <div>
+            <label htmlFor="preferredWeightUnit" className="field-label">Unit</label>
+            <select id="preferredWeightUnit" name="preferredWeightUnit" className="text-input" defaultValue={profile.preferred_weight_unit}>
+              <option value="lb">lb</option>
+              <option value="kg">kg</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="typicalDailyCaffeineMg" className="field-label">Typical daily caffeine (mg, optional)</label>
+          <input id="typicalDailyCaffeineMg" name="typicalDailyCaffeineMg" type="number" min="0" max="1000" step="25" inputMode="numeric" className="text-input" defaultValue={profile.typical_daily_caffeine_mg ?? ""} />
+          <p className="field-hint">One Maurten Gel 100 CAF 100 contains 100 mg. Include coffee, tea, and other sources in your estimate.</p>
+        </div>
+        <div>
+          <label htmlFor="caffeineSensitivity" className="field-label">Caffeine sensitivity</label>
+          <select id="caffeineSensitivity" name="caffeineSensitivity" className="text-input" defaultValue={profile.caffeine_sensitivity}>
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="avoid">Avoid caffeine</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="caffeineCutoffHour" className="field-label">Latest comfortable caffeine hour (optional)</label>
+          <select id="caffeineCutoffHour" name="caffeineCutoffHour" className="text-input" defaultValue={profile.caffeine_cutoff_hour ?? ""}>
+            <option value="">Not set</option>
+            {Array.from({ length: 24 }, (_, hour) => (
+              <option key={hour} value={hour}>{new Date(2020, 0, 1, hour).toLocaleTimeString("en-US", { hour: "numeric" })}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="dietaryRestrictions" className="field-label">Dietary restrictions or allergies (optional)</label>
+          <input id="dietaryRestrictions" name="dietaryRestrictions" type="text" className="text-input" defaultValue={profile.dietary_restrictions.join(", ")} placeholder="Comma-separated" />
+        </div>
+        <div>
+          <label htmlFor="lactoseTolerant" className="field-label">Milk-based shake tolerance</label>
+          <select id="lactoseTolerant" name="lactoseTolerant" className="text-input" defaultValue={profile.lactose_tolerant === true ? "yes" : profile.lactose_tolerant === false ? "no" : "unknown"}>
+            <option value="unknown">Not sure</option>
+            <option value="yes">Tolerates it</option>
+            <option value="no">Does not tolerate it</option>
+          </select>
+        </div>
+      </fieldset>
 
       <fieldset className="space-y-2">
         <legend className="field-label">Home equipment</legend>

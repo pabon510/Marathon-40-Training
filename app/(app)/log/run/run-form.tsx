@@ -10,6 +10,7 @@ import { extractionToFormValues, type GarminFormValues } from "@/domain/import/g
 import { logRunAction, type LogRunFormState } from "./actions";
 import { GarminScreenshotImport } from "./garmin-screenshot-import";
 import { RunAnalysisStatus } from "./run-analysis-status";
+import { FuelingLogFields } from "@/components/fueling-log-fields";
 
 const initialState: LogRunFormState = {};
 
@@ -52,6 +53,7 @@ export function RunLogForm({
     return (
       <div className="card space-y-2">
         <p className="text-sm font-semibold text-safety-ok">Run logged.</p>
+        {state.fuelingWarning ? <p className="text-sm text-amber-800">{state.fuelingWarning}</p> : null}
         {state.tomorrowPreview ? <p className="text-sm text-slate-600">{state.tomorrowPreview}</p> : null}
         {state.runLogId && state.sessionId ? (
           <RunAnalysisStatus runLogId={state.runLogId} sessionId={state.sessionId} />
@@ -269,6 +271,8 @@ export function RunLogForm({
           </div>
         </fieldset>
       ) : null}
+
+      <FuelingLogFields includeDuringRun />
 
       <label className="flex min-h-touch items-center gap-2 text-sm">
         <input type="checkbox" name="unplanned" />

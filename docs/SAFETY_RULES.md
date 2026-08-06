@@ -1,5 +1,18 @@
 # Safety Rules
 
+## Fueling boundaries
+
+- Fueling guidance is education and workout planning, not medical nutrition treatment.
+- Deterministic rules own product quantities and timing; runtime AI must not invent nutrient targets.
+- The non-caffeinated Maurten Gel 100 is the default repeatable gel. Gel 100 CAF 100 is tracked separately because
+  each serving adds 100 mg caffeine.
+- The app must count all reported caffeine sources, honor `avoid` and high-sensitivity settings, and never present
+  the FDA's general 400 mg/day healthy-adult reference as a performance target.
+- The available 30 g protein shake covers a typical post-exercise protein serving but its 5 g carbohydrate does not
+  make it a complete long-run recovery meal.
+- Recommend professional medical or sports-dietitian guidance for relevant medical restrictions, eating-disorder
+  history, persistent gastrointestinal symptoms, unexplained weight change, or aggressive weight-loss goals.
+
 ## Scope and disclaimer
 
 The application is a training organizer, not a medical device and not a diagnosis or treatment service. It records symptoms and adjusts training conservatively. Display a concise disclaimer in settings and near safety interventions.

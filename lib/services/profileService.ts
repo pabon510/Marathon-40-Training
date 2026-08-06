@@ -18,6 +18,13 @@ export interface ProfileSettingsPatch {
   equipment?: unknown;
   reminder_preferences?: unknown;
   display_name?: string;
+  body_weight_kg?: number | null;
+  preferred_weight_unit?: "lb" | "kg";
+  typical_daily_caffeine_mg?: number | null;
+  caffeine_sensitivity?: "low" | "normal" | "high" | "avoid";
+  caffeine_cutoff_hour?: number | null;
+  dietary_restrictions?: string[];
+  lactose_tolerant?: boolean | null;
 }
 
 /** Only in-app-editable fields per docs/VERSION_1_SCOPE.md "Access and profile". Baseline/injury history stay repository-managed. */

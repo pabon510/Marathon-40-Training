@@ -8,10 +8,13 @@ import { evaluatePreWorkoutSafety } from "@/domain/safety/hardBlock";
 import { startWorkoutSession, saveStrengthLogEntries, savePostWorkoutCheckIn } from "@/lib/services/loggingService";
 import { todayLocalDate } from "@/lib/date";
 import { isScaleScore } from "@/domain/content/trainingScales";
+import type { WorkoutKind } from "@/domain/types";
+import { fuelingPlanForWorkout, parseFuelingLogForm, saveWorkoutFuelingLog } from "@/lib/services/fuelingService";
 
 export interface LogStrengthFormState {
   error?: string;
   success?: boolean;
+  fuelingWarning?: string;
 }
 
 export async function logStrengthAction(_prev: LogStrengthFormState, formData: FormData): Promise<LogStrengthFormState> {
@@ -156,6 +159,27 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
       notes,
     });
 
+    const fuelingKind = (plannedWorkout?.workout_kind ?? "strength_full") as WorkoutKind;
+    const fuelingPlan = fuelingPlanForWorkout(
+      profile,
+      fuelingKind,
+      plannedWorkout?.planned_duration_minutes ?? 45,
+    );
+    let fuelingWarning: string | undefined;
+    try {
+      await saveWorkoutFuelingLog(
+        supabase,
+        user.id,
+        sessionId,
+        fuelingPlan,
+        parseFuelingLogForm(formData),
+      );
+    } catch {
+      // The strength workout remains authoritative even if optional fueling
+      // context fails to save.
+      fuelingWarning = "The workout was saved, but its optional fueling check-in could not be attached.";
+    }
+
     if (plannedWorkout) {
       await supabase
         .from("planned_workouts")
@@ -169,7 +193,7 @@ export async function logStrengthAction(_prev: LogStrengthFormState, formData: F
     revalidatePath("/today");
     revalidatePath("/plan");
     revalidatePath("/progress");
-    return { success: true };
+    return { success: true, fuelingWarning };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to save strength log." };
   }

@@ -12,6 +12,8 @@ import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
 import { getStrengthWarmup } from "@/domain/content/strengthWarmups";
 import { StrengthWarmupCard } from "@/components/strength-warmup";
 import { getRecoveryMovement } from "@/domain/content/recoveryMovementLibrary";
+import type { FuelingPlan } from "@/domain/fueling/fuelingPlan";
+import { FuelingPlanCard } from "@/components/fueling-plan-card";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -69,6 +71,7 @@ export function WorkoutDetailView({
   showLocationToggle,
   runContext,
   recoveryRoutineSlug,
+  fuelingPlan,
 }: {
   kind: WorkoutKind;
   goal: string;
@@ -80,6 +83,7 @@ export function WorkoutDetailView({
   showLocationToggle: boolean;
   runContext: RunContext;
   recoveryRoutineSlug?: string | null;
+  fuelingPlan: FuelingPlan;
 }) {
   const recoveryRoutine = kind === "active_recovery" ? getRecoveryRoutine(recoveryRoutineSlug) : null;
   const warmup = strength ? getStrengthWarmup(kind, locationChoice === "gym" ? "gym" : "home") : null;
@@ -199,6 +203,8 @@ export function WorkoutDetailView({
           </p>
         </section>
       ) : null}
+
+      <FuelingPlanCard plan={fuelingPlan} />
 
       {!runPrescription && !strength && !recoveryRoutine ? (
         <p className="card text-sm text-slate-500">{durationMinutes} minutes.</p>

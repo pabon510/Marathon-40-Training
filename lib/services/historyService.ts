@@ -6,6 +6,7 @@ import type {
   RunLogRow,
   StrengthLogRow,
   WorkoutSessionRow,
+  WorkoutFuelingLogRow,
 } from "@/lib/supabase/types";
 
 type Client = SupabaseClient<Database>;
@@ -81,6 +82,7 @@ export interface SessionDetail {
   runLog: RunLogRow | null;
   strengthLogs: StrengthLogWithExercise[];
   postCheckIn: PostWorkoutCheckInRow | null;
+  fuelingLog: WorkoutFuelingLogRow | null;
 }
 
 /** Loads one session and everything attached to it. RLS restricts this to the caller's own rows. */
@@ -98,10 +100,11 @@ export async function getSessionDetail(
   if (error) throw error;
   if (!session) return null;
 
-  const [{ data: runLog }, { data: strengthLogs }, { data: postCheckIn }] = await Promise.all([
+  const [{ data: runLog }, { data: strengthLogs }, { data: postCheckIn }, { data: fuelingLog }] = await Promise.all([
     supabase.from("run_logs").select("*").eq("workout_session_id", sessionId).maybeSingle(),
     supabase.from("strength_logs").select("*").eq("workout_session_id", sessionId).order("ordinal"),
     supabase.from("post_workout_check_ins").select("*").eq("workout_session_id", sessionId).maybeSingle(),
+    supabase.from("workout_fueling_logs").select("*").eq("workout_session_id", sessionId).maybeSingle(),
   ]);
 
   const exerciseIds = [...new Set((strengthLogs ?? []).map((l) => l.exercise_id))];
@@ -131,5 +134,6 @@ export async function getSessionDetail(
     runLog: runLog ?? null,
     strengthLogs: withExercises,
     postCheckIn: postCheckIn ?? null,
+    fuelingLog: fuelingLog ?? null,
   };
 }
