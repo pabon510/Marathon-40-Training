@@ -112,6 +112,14 @@ export function SettingsForm({ profile }: { profile: ProfileRow }) {
           Used only to tailor workout fueling. Weight is not shown as a progress metric. The app uses approximate
           foods and servings rather than requiring calorie or macro tracking.
         </p>
+        <div>
+          <label htmlFor="fuelingTimingPreference" className="field-label">Typical workout timing</label>
+          <select id="fuelingTimingPreference" name="fuelingTimingPreference" className="text-input" defaultValue={profile.fueling_timing_preference}>
+            <option value="early_morning">Usually within 30 minutes of waking</option>
+            <option value="standard">Usually later or varies</option>
+          </select>
+          <p className="field-hint">Early-morning plans use a small, practical carbohydrate option instead of asking you to wake hours earlier.</p>
+        </div>
         <div className="grid grid-cols-[1fr_7rem] gap-3">
           <div>
             <label htmlFor="bodyWeight" className="field-label">Current weight (optional)</label>

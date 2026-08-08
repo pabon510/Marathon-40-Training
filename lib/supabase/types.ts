@@ -54,6 +54,7 @@ export interface ProfileRow {
   caffeine_cutoff_hour: number | null;
   dietary_restrictions: string[];
   lactose_tolerant: boolean | null;
+  fueling_timing_preference: "early_morning" | "standard";
   baseline_version: number;
   created_at: string;
   updated_at: string;

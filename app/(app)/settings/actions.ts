@@ -41,6 +41,8 @@ export async function saveSettings(_prev: SettingsFormState, formData: FormData)
     .filter(Boolean);
   const lactoseValue = String(formData.get("lactoseTolerant") ?? "unknown");
   const lactoseTolerant = lactoseValue === "yes" ? true : lactoseValue === "no" ? false : null;
+  const fuelingTimingPreference = String(formData.get("fuelingTimingPreference") ?? "standard") as
+    | "early_morning" | "standard";
 
   if (easyHrCeiling < easyHrFloor) {
     return { error: "Easy-run HR ceiling must be at or above the floor." };
@@ -86,6 +88,7 @@ export async function saveSettings(_prev: SettingsFormState, formData: FormData)
     caffeine_cutoff_hour: caffeineCutoffHour,
     dietary_restrictions: dietaryRestrictions,
     lactose_tolerant: lactoseTolerant,
+    fueling_timing_preference: fuelingTimingPreference,
   });
 
   revalidatePath("/settings");

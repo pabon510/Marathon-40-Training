@@ -13,6 +13,7 @@ export function fuelingProfileFromRow(profile: ProfileRow): FuelingProfile {
     caffeineCutoffHour: profile.caffeine_cutoff_hour,
     dietaryRestrictions: profile.dietary_restrictions,
     lactoseTolerant: profile.lactose_tolerant,
+    workoutTimingPreference: profile.fueling_timing_preference,
   };
 }
 

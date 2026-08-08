@@ -6,6 +6,10 @@
 weight unit, typical daily caffeine, caffeine sensitivity and cutoff, dietary restrictions, and milk-shake tolerance.
 Weight is a calculation input, not a Progress-screen body measurement.
 
+`fueling_timing_preference` distinguishes workouts normally started within 30 minutes of waking from later or
+variable workouts. Early-morning guidance substitutes a small familiar carbohydrate option for a full meal hours
+before training; it does not change the workout prescription.
+
 `workout_fueling_logs` is an optional one-to-one child of `workout_sessions`. It preserves the rules version and
 recommendation snapshot shown for that session, then records approximate choices rather than requiring calorie or
 macro tracking:

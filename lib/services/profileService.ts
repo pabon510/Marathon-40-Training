@@ -25,6 +25,7 @@ export interface ProfileSettingsPatch {
   caffeine_cutoff_hour?: number | null;
   dietary_restrictions?: string[];
   lactose_tolerant?: boolean | null;
+  fueling_timing_preference?: "early_morning" | "standard";
 }
 
 /** Only in-app-editable fields per docs/VERSION_1_SCOPE.md "Access and profile". Baseline/injury history stay repository-managed. */
