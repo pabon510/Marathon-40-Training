@@ -9,6 +9,35 @@ export interface FuelingProfile {
   caffeineCutoffHour: number | null;
   dietaryRestrictions: string[];
   lactoseTolerant: boolean | null;
+  workoutTimingPreference: "early_morning" | "standard";
+}
+
+function beforeStrength(profile: FuelingProfile): string {
+  if (profile.workoutTimingPreference === "early_morning") {
+    return "Early-morning option: after waking, have water and one small, familiar carbohydrate serving such as a banana, toast with jam, or applesauce. Start when comfortable and save the protein shake for afterward. If you tolerate the shake before lifting, pair it with carbohydrate rather than using it alone.";
+  }
+  return "Have a normal meal with carbohydrate and protein 1–4 hours beforehand. If your last meal was more than 3–4 hours ago, use a light snack such as a banana or toast alongside the shake.";
+}
+
+function beforeShortRun(kind: WorkoutKind, profile: FuelingProfile): string {
+  if (profile.workoutTimingPreference === "early_morning") {
+    if (kind === "threshold_run") {
+      return "Early-morning quality-run option: have water and one small, familiar carbohydrate serving immediately after waking, then begin when comfortable. A banana, toast with jam, applesauce, or a small sports drink works; avoid testing a new food today.";
+    }
+    return "Early-morning option: water may be enough if this short easy run feels good without food. If you wake hungry or tend to fade, have one small, familiar carbohydrate serving and begin when comfortable.";
+  }
+  return "Use your normal meal or a familiar carbohydrate snack if you are hungry or have not eaten for several hours.";
+}
+
+function beforeLongerRun(profile: FuelingProfile, isOver90: boolean): string {
+  if (profile.workoutTimingPreference === "early_morning") {
+    return isOver90
+      ? "Early-morning option: after waking, drink water and have one small, low-fiber carbohydrate serving. If solid food is uncomfortable, one non-caffeinated Gel 100 immediately before starting may replace that snack; count it as the first planned gel and delay the next gel by about 40–45 minutes."
+      : "Early-morning option: after waking, drink water and have one small, familiar carbohydrate serving such as a banana, toast with jam, or applesauce. If solid food is uncomfortable, use one non-caffeinated Gel 100 immediately before starting and do not automatically add another gel during this 60–90 minute run.";
+  }
+  return isOver90
+    ? "Eat a familiar carbohydrate-focused meal 1–4 hours before the run. Do not test unfamiliar foods on a long run."
+    : "Eat a familiar carbohydrate-focused meal 1–4 hours before the run. Keep fat and fiber moderate if they bother your stomach.";
 }
 
 export interface FuelingPlan {
@@ -101,7 +130,7 @@ export function buildFuelingPlan(
     return {
       ...base,
       applies: true,
-      before: "Have a normal meal with carbohydrate and protein 1–4 hours beforehand. If your last meal was more than 3–4 hours ago, use a light snack such as a banana or toast alongside the shake.",
+      before: beforeStrength(profile),
       during: "Water is normally enough for this strength session.",
       after: `One available protein shake supplies 30 g protein and covers today's ${targetProtein.low}–${targetProtein.high} g recovery target. If a normal meal is not coming soon, pair it with a carbohydrate food.`,
       productPlan: {
@@ -123,7 +152,7 @@ export function buildFuelingPlan(
       return {
         ...base,
         applies: true,
-        before: "Use your normal meal or a familiar carbohydrate snack if you are hungry or have not eaten for several hours.",
+        before: beforeShortRun(kind, profile),
         during: "No gel is normally needed for this duration. Bring water when conditions or thirst call for it.",
         after: `A normal meal is sufficient. If using the 30 g protein shake, pair it with carbohydrate when the run was demanding or a meal is delayed.`,
         productPlan: {
@@ -142,7 +171,7 @@ export function buildFuelingPlan(
       return {
         ...base,
         applies: true,
-        before: "Eat a familiar carbohydrate-focused meal 1–4 hours before the run. Keep fat and fiber moderate if they bother your stomach.",
+        before: beforeLongerRun(profile, false),
         during: "Fueling is optional at this duration, but marathon practice is useful: take 1 non-caffeinated Maurten Gel 100 with water around 30–40 minutes.",
         after: `Within about 2 hours, have carbohydrate plus ${targetProtein.low}–${targetProtein.high} g protein. Your shake supplies 30 g protein but only 5 g carbohydrate, so pair it with a banana, bagel, oatmeal, cereal, or a normal meal.`,
         productPlan: {
@@ -164,7 +193,7 @@ export function buildFuelingPlan(
     return {
       ...base,
       applies: true,
-      before: "Eat a familiar carbohydrate-focused meal 1–4 hours before the run. Do not test unfamiliar foods on a long run.",
+      before: beforeLongerRun(profile, true),
       during: `Target 30–60 g carbohydrate per hour. Start with ${gel100Count} non-caffeinated Maurten Gel 100 servings, approximately one every 40–45 minutes, with water. Each gel provides 25 g carbohydrate.`,
       after: `Within about 2 hours, have carbohydrate plus ${targetProtein.low}–${targetProtein.high} g protein. One shake covers 30 g protein; add a meaningful carbohydrate food or meal.`,
       productPlan: {

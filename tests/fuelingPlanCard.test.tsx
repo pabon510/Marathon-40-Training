@@ -10,6 +10,7 @@ const profile = {
   caffeineCutoffHour: 14,
   dietaryRestrictions: [],
   lactoseTolerant: true,
+  workoutTimingPreference: "standard" as const,
 };
 
 describe("FuelingPlanCard", () => {
