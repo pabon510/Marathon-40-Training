@@ -6,6 +6,22 @@ export interface WeeklyShapeDay {
   workoutKind: WorkoutKind;
 }
 
+/**
+ * Disabled checkboxes are omitted from browser form submissions. Merge the
+ * saved dates through today back into an adjusted current week so fixed days
+ * cannot accidentally make a four-day week look like a three-day week.
+ */
+export function mergeFixedAvailableDates(
+  submittedDates: string[],
+  savedDates: string[],
+  preserveThroughDate: string | null,
+): string[] {
+  const fixedDates = preserveThroughDate
+    ? savedDates.filter((date) => date <= preserveThroughDate)
+    : [];
+  return [...new Set([...submittedDates, ...fixedDates])].sort();
+}
+
 const LOWER_BODY_STRENGTH: WorkoutKind[] = ["strength_a", "strength_b", "strength_full"];
 
 function dayDiff(a: string, b: string): number {

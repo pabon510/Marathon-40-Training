@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateWeeklyShape, generateWeeklyShapeAroundLockedDays } from "./weeklyShape";
+import {
+  generateWeeklyShape,
+  generateWeeklyShapeAroundLockedDays,
+  mergeFixedAvailableDates,
+} from "./weeklyShape";
 
 describe("generateWeeklyShape", () => {
   it("4-day default: two strength and two runs, long run on the chosen day", () => {
@@ -94,5 +98,33 @@ describe("generateWeeklyShape", () => {
       1,
       [{ localDate: "2026-08-10", workoutKind: "strength_a" }],
     )).toThrow("Keep completed and current workout days selected");
+  });
+
+  it("keeps disabled fixed dates in a current-week availability submission", () => {
+    const available = mergeFixedAvailableDates(
+      ["2026-08-13", "2026-08-15", "2026-08-16"],
+      ["2026-08-11", "2026-08-14", "2026-08-15", "2026-08-16"],
+      "2026-08-11",
+    );
+
+    expect(available).toEqual(["2026-08-11", "2026-08-13", "2026-08-15", "2026-08-16"]);
+    expect(generateWeeklyShape(available, "2026-08-16", 3).map((day) => day.workoutKind)).toContain("threshold_run");
+    expect(generateWeeklyShape(available, "2026-08-16", 3).map((day) => day.workoutKind)).not.toContain("combined_short");
+  });
+
+  it("repairs a fixed date preserved in plan history after the saved setup lost it", () => {
+    const corruptedSetupDates = ["2026-08-13", "2026-08-15", "2026-08-16"];
+    const preservedPlannedDates = ["2026-08-11"];
+
+    const repaired = mergeFixedAvailableDates(
+      corruptedSetupDates,
+      preservedPlannedDates,
+      "2026-08-11",
+    );
+
+    expect(repaired).toHaveLength(4);
+    const kinds = generateWeeklyShape(repaired, "2026-08-16", 3).map((day) => day.workoutKind);
+    expect(kinds).toContain("threshold_run");
+    expect(kinds).not.toContain("combined_short");
   });
 });
