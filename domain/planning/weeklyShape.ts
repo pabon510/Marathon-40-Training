@@ -37,7 +37,7 @@ function permutations<T>(items: T[]): T[][] {
 }
 
 /** Assigns `roles` to `dates` (same length) minimizing consecutive-day lower-body strength overlap. */
-function bestAssignment(dates: string[], roles: WorkoutKind[]): WeeklyShapeDay[] {
+export function bestAssignment(dates: string[], roles: WorkoutKind[]): WeeklyShapeDay[] {
   let best: WeeklyShapeDay[] | null = null;
   let bestConflicts = Infinity;
   for (const perm of permutations(roles)) {
@@ -50,6 +50,43 @@ function bestAssignment(dates: string[], roles: WorkoutKind[]): WeeklyShapeDay[]
     }
   }
   return best!;
+}
+
+/**
+ * Rebuilds the editable portion of a week while keeping workouts that have
+ * already happened fixed. Each locked workout consumes the matching role from
+ * the newly generated weekly shape, so editing availability cannot duplicate a
+ * completed strength session or long run later in the same week.
+ */
+export function generateWeeklyShapeAroundLockedDays(
+  availableDates: string[],
+  longRunDate: string,
+  weekNumber: number,
+  lockedDays: WeeklyShapeDay[],
+): WeeklyShapeDay[] {
+  const desired = generateWeeklyShape(availableDates, longRunDate, weekNumber);
+  const remainingKinds = desired.map((day) => day.workoutKind);
+
+  for (const locked of lockedDays) {
+    const index = remainingKinds.indexOf(locked.workoutKind);
+    if (index >= 0) remainingKinds.splice(index, 1);
+  }
+
+  const lockedDates = new Set(lockedDays.map((day) => day.localDate));
+  const editableDates = [...availableDates].sort().filter((date) => !lockedDates.has(date));
+  if (remainingKinds.length !== editableDates.length) {
+    throw new Error("Keep completed and current workout days selected when adjusting this week.");
+  }
+
+  const longRunIndex = remainingKinds.indexOf("long_run");
+  const fixedLongRun = longRunIndex >= 0 && editableDates.includes(longRunDate)
+    ? [{ localDate: longRunDate, workoutKind: "long_run" as WorkoutKind }]
+    : [];
+  if (fixedLongRun.length) remainingKinds.splice(longRunIndex, 1);
+
+  const otherDates = editableDates.filter((date) => date !== longRunDate || fixedLongRun.length === 0);
+  return [...lockedDays, ...fixedLongRun, ...bestAssignment(otherDates, remainingKinds)]
+    .sort((a, b) => a.localDate.localeCompare(b.localDate));
 }
 
 /**

@@ -17,12 +17,16 @@ export function WeeklySetupForm({
   weekDates,
   defaultAvailableWeekdays,
   preferredLongRunDay,
+  todayDate,
+  isCurrentWeek,
   existing,
 }: {
   weekStartDate: string;
   weekDates: string[];
   defaultAvailableWeekdays: string[];
   preferredLongRunDay: "saturday" | "sunday";
+  todayDate: string;
+  isCurrentWeek: boolean;
   existing: {
     availableDates: string[];
     intendedLongRunDate: string;
@@ -86,10 +90,12 @@ export function WeeklySetupForm({
                 value={date}
                 checked={available.has(date)}
                 onChange={() => toggleDate(date)}
+                disabled={isCurrentWeek && date <= todayDate}
                 className="h-5 w-5 rounded border-slate-300 text-brand-600"
               />
               <span className="capitalize">
                 {weekdayOf(date)} <span className="text-slate-400">({date})</span>
+                {isCurrentWeek && date <= todayDate ? <span className="ml-1 text-xs text-slate-500">Fixed</span> : null}
               </span>
             </label>
           ))}
@@ -102,7 +108,7 @@ export function WeeklySetupForm({
           Add up to two gentle at-home mobility sessions on rest days. Keep effort at 1–3/10.
         </p>
         <div className="space-y-2">
-          {weekDates.filter((date) => !available.has(date)).map((date) => {
+          {weekDates.filter((date) => !available.has(date) && (!isCurrentWeek || date > todayDate)).map((date) => {
             const selected = recoveryChoices[date];
             return (
               <div key={date} className="rounded-lg bg-white p-3 ring-1 ring-slate-200">
@@ -165,7 +171,7 @@ export function WeeklySetupForm({
       {state.error ? <p className="text-sm font-medium text-safety-block">{state.error}</p> : null}
 
       <button type="submit" disabled={pending || available.size < 3} className="btn-primary w-full">
-        {pending ? "Generating plan…" : "Generate this week's plan"}
+        {pending ? "Updating plan…" : existing ? "Save adjusted week" : "Generate this week's plan"}
       </button>
     </form>
   );

@@ -126,6 +126,7 @@ export interface PlannedWorkoutRow {
   completion_credit_factor: number;
   created_at: string;
   updated_at: string;
+  superseded_at: string | null;
 }
 
 export interface PlanChangeRow {
