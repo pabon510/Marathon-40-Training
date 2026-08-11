@@ -41,7 +41,9 @@ Use UUID primary keys, `created_at`/`updated_at` timestamps, and `user_id` on us
 
 ### `planned_workouts`
 
-`id`, plan version, local date, workout kind, priority, status (`provisional`, `confirmed`, `completed`, `partial`, `skipped`, `blocked`, `replaced`, `incomplete`), goal, planned duration, run prescription JSON, strength template id, location choice, run context (`standard` or `stroller`), shorter alternative JSON, original workout id, completion-credit factor.
+`id`, plan version, local date, workout kind, priority, status (`provisional`, `confirmed`, `completed`, `partial`, `skipped`, `blocked`, `replaced`, `incomplete`), goal, planned duration, run prescription JSON, strength template id, location choice, run context (`standard` or `stroller`), shorter alternative JSON, original workout id, completion-credit factor, nullable superseded timestamp.
+
+A weekly reschedule sets `superseded_at` only on future plan rows that are no longer authoritative. The rows remain in place so historical IDs, workout-session links, substitutions, and audit context are preserved. Read paths and weekly progress views use the newest non-superseded row per user/date.
 
 Run prescription stores duration, HR target/ceiling, pace context, intervals, walk-break guidance, and calibration flag.
 

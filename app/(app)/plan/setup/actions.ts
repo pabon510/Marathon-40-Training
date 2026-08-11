@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { generateWeekFromSetup, submitWeeklySetup } from "@/lib/services/planService";
+import { generateWeekFromSetup, getOrCreateWeeklySetup, submitWeeklySetup } from "@/lib/services/planService";
 import { isRecoveryRoutineSlug } from "@/domain/content/recoveryRoutines";
-import { addDays } from "@/lib/date";
+import { addDays, mondayOfWeek, todayLocalDate } from "@/lib/date";
+import { getProfile } from "@/lib/services/profileService";
 
 export interface WeeklySetupFormState {
   error?: string;
@@ -22,6 +23,13 @@ export async function submitWeeklySetupAction(
   if (!user) return { error: "Not signed in." };
 
   const weekStartDate = String(formData.get("weekStartDate") ?? "");
+  const profile = await getProfile(supabase, user.id);
+  if (!profile) return { error: "Your training profile could not be loaded." };
+  const today = todayLocalDate(profile.timezone);
+  const currentWeekStart = mondayOfWeek(today);
+  if (![currentWeekStart, addDays(currentWeekStart, 7)].includes(weekStartDate)) {
+    return { error: "Only this week or next week can be planned here." };
+  }
   const availableDates = formData.getAll("availableDates").map(String).sort();
   const intendedLongRunDate = String(formData.get("intendedLongRunDate") ?? "");
   const backupLongRunDate = String(formData.get("backupLongRunDate") ?? "");
@@ -58,6 +66,7 @@ export async function submitWeeklySetupAction(
   }
 
   try {
+    const existing = await getOrCreateWeeklySetup(supabase, user.id, weekStartDate);
     const weeklySetupId = await submitWeeklySetup(supabase, user.id, {
       weekStartDate,
       availableDates,
@@ -65,12 +74,18 @@ export async function submitWeeklySetupAction(
       backupLongRunDate: backupLongRunDate || intendedLongRunDate,
       activeRecoveryChoices,
     });
-    await generateWeekFromSetup(supabase, user.id, weeklySetupId, "initial");
+    await generateWeekFromSetup(
+      supabase,
+      user.id,
+      weeklySetupId,
+      existing ? "edit" : "initial",
+      existing && weekStartDate === currentWeekStart ? today : undefined,
+    );
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to generate the plan for this week." };
   }
 
   revalidatePath("/plan");
   revalidatePath("/today");
-  redirect("/plan");
+  redirect(`/plan?week=${weekStartDate}`);
 }

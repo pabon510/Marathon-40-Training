@@ -1,8 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/types";
+import type { Database, Json } from "@/lib/supabase/types";
 import type { ProfileRow } from "@/lib/supabase/types";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
-import { generateWeeklyShape, type WeeklyShapeDay } from "@/domain/planning/weeklyShape";
+import {
+  generateWeeklyShape,
+  generateWeeklyShapeAroundLockedDays,
+  type WeeklyShapeDay,
+} from "@/domain/planning/weeklyShape";
 import { addDays, mondayOfWeek, nextWeekday } from "@/lib/date";
 import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
 
@@ -116,6 +120,7 @@ export async function generateWeekFromSetup(
   userId: string,
   weeklySetupId: string,
   trigger: "initial" | "edit" = "initial",
+  preserveThroughDate?: string,
 ): Promise<GeneratedWeekResult> {
   const { data: setup, error: setupError } = await supabase
     .from("weekly_setups")
@@ -154,9 +159,36 @@ export async function generateWeekFromSetup(
     ) + 1;
 
   const isCalibration = setup.week_start_date <= calibrationEndDate;
-  const shape = generateWeeklyShape(setup.available_dates, setup.intended_long_run_date, Math.max(1, weekNumber));
+  let lockedWorkouts: Awaited<ReturnType<typeof getPlannedWorkoutsForRange>> = [];
+  if (trigger === "edit" && preserveThroughDate) {
+    lockedWorkouts = (await getPlannedWorkoutsForRange(
+      supabase,
+      userId,
+      setup.week_start_date,
+      preserveThroughDate,
+    )).filter((workout) => workout.workout_kind !== "active_recovery");
+  }
+  const shape = lockedWorkouts.length
+    ? generateWeeklyShapeAroundLockedDays(
+        setup.available_dates,
+        setup.intended_long_run_date,
+        Math.max(1, weekNumber),
+        lockedWorkouts.map((workout) => ({
+          localDate: workout.local_date,
+          workoutKind: workout.workout_kind as WorkoutKind,
+        })),
+      )
+    : generateWeeklyShape(setup.available_dates, setup.intended_long_run_date, Math.max(1, weekNumber));
   const recoveryChoices = Array.isArray(setup.active_recovery_choices)
     ? setup.active_recovery_choices as unknown as { localDate: string; routineSlug: string }[]
+    : [];
+  const editablePrevious = trigger === "edit"
+    ? (await getPlannedWorkoutsForRange(
+        supabase,
+        userId,
+        setup.week_start_date,
+        addDays(setup.week_start_date, 6),
+      )).filter((workout) => !preserveThroughDate || workout.local_date > preserveThroughDate)
     : [];
 
   const { data: latestVersion } = await supabase
@@ -187,7 +219,7 @@ export async function generateWeekFromSetup(
   if (versionError || !planVersion) throw versionError ?? new Error("Failed to create plan version");
 
   const rows = [];
-  for (const day of shape) {
+  for (const day of shape.filter((candidate) => !preserveThroughDate || candidate.localDate > preserveThroughDate)) {
     const runPrescription = buildRunPrescription(day.workoutKind, profile, isCalibration);
     const templateId = await strengthTemplateId(supabase, day.workoutKind);
     const strengthMinutes = await templateDurationMinutes(supabase, day.workoutKind);
@@ -209,7 +241,7 @@ export async function generateWeekFromSetup(
       recovery_routine_slug: null,
     });
   }
-  for (const choice of recoveryChoices) {
+  for (const choice of recoveryChoices.filter((candidate) => !preserveThroughDate || candidate.localDate > preserveThroughDate)) {
     const routine = getRecoveryRoutine(choice.routineSlug);
     if (!routine || shape.some((day) => day.localDate === choice.localDate)) continue;
     rows.push({
@@ -229,8 +261,62 @@ export async function generateWeekFromSetup(
     });
   }
 
-  const { error: insertError } = await supabase.from("planned_workouts").insert(rows);
-  if (insertError) throw insertError;
+  if (rows.length) {
+    const { error: insertError } = await supabase.from("planned_workouts").insert(rows);
+    if (insertError) throw insertError;
+  }
+
+  if (trigger === "edit") {
+    let editableRowsQuery = supabase
+      .from("planned_workouts")
+      .update({ superseded_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .gte("local_date", setup.week_start_date)
+      .lte("local_date", addDays(setup.week_start_date, 6))
+      .neq("plan_version_id", planVersion.id)
+      .is("superseded_at", null);
+    if (preserveThroughDate) editableRowsQuery = editableRowsQuery.gt("local_date", preserveThroughDate);
+    const { error: supersedeError } = await editableRowsQuery;
+    if (supersedeError) throw supersedeError;
+
+    const oldByDate = new Map(editablePrevious.map((workout) => [workout.local_date, workout]));
+    const newByDate = new Map(rows.map((workout) => [workout.local_date, workout]));
+    const changedDates = [...new Set([...oldByDate.keys(), ...newByDate.keys()])].filter((date) => {
+      const oldWorkout = oldByDate.get(date);
+      const newWorkout = newByDate.get(date);
+      return oldWorkout?.workout_kind !== newWorkout?.workout_kind
+        || oldWorkout?.planned_duration_minutes !== newWorkout?.planned_duration_minutes;
+    });
+    if (changedDates.length) {
+      const { error: changesError } = await supabase.from("plan_changes").insert(changedDates.map((localDate) => {
+        const oldWorkout = oldByDate.get(localDate);
+        const newWorkout = newByDate.get(localDate);
+        return {
+          user_id: userId,
+          old_plan_version_id: oldWorkout?.plan_version_id ?? null,
+          new_plan_version_id: planVersion.id,
+          local_date: localDate,
+          old_workout_summary: oldWorkout ? {
+            workoutKind: oldWorkout.workout_kind,
+            plannedDurationMinutes: oldWorkout.planned_duration_minutes,
+            status: oldWorkout.status,
+          } as Json : null,
+          new_workout_summary: newWorkout ? {
+            workoutKind: newWorkout.workout_kind,
+            plannedDurationMinutes: newWorkout.planned_duration_minutes,
+            status: newWorkout.status,
+          } as Json : { workoutKind: "rest", status: "planned" } as Json,
+          reason_code: "WEEKLY_SETUP_EDIT",
+          explanation: "You adjusted your availability, so the remaining week was redistributed without creating workout debt.",
+          triggering_values: {
+            availableDates: setup.available_dates,
+            intendedLongRunDate: setup.intended_long_run_date,
+          } as Json,
+        };
+      }));
+      if (changesError) throw changesError;
+    }
+  }
 
   return { planVersionId: planVersion.id, weekStartDate: setup.week_start_date, days: shape };
 }
@@ -309,6 +395,7 @@ export async function getPlannedWorkoutsForRange(
     .eq("user_id", userId)
     .gte("local_date", startDate)
     .lte("local_date", endDate)
+    .is("superseded_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
 

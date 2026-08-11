@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateWeeklyShape } from "./weeklyShape";
+import { generateWeeklyShape, generateWeeklyShapeAroundLockedDays } from "./weeklyShape";
 
 describe("generateWeeklyShape", () => {
   it("4-day default: two strength and two runs, long run on the chosen day", () => {
@@ -72,5 +72,27 @@ describe("generateWeeklyShape", () => {
 
   it("throws if the long run date is not one of the available dates", () => {
     expect(() => generateWeeklyShape(["2026-08-04", "2026-08-06"], "2026-08-08", 1)).toThrow();
+  });
+
+  it("keeps completed roles fixed while redistributing the remaining week", () => {
+    const days = generateWeeklyShapeAroundLockedDays(
+      ["2026-08-10", "2026-08-11", "2026-08-14", "2026-08-16"],
+      "2026-08-16",
+      1,
+      [{ localDate: "2026-08-10", workoutKind: "strength_a" }],
+    );
+
+    expect(days.find((day) => day.localDate === "2026-08-10")?.workoutKind).toBe("strength_a");
+    expect(days.filter((day) => day.workoutKind === "strength_a")).toHaveLength(1);
+    expect(days.find((day) => day.localDate === "2026-08-16")?.workoutKind).toBe("long_run");
+  });
+
+  it("requires locked workout dates to remain selected", () => {
+    expect(() => generateWeeklyShapeAroundLockedDays(
+      ["2026-08-11", "2026-08-13", "2026-08-14", "2026-08-16"],
+      "2026-08-16",
+      1,
+      [{ localDate: "2026-08-10", workoutKind: "strength_a" }],
+    )).toThrow("Keep completed and current workout days selected");
   });
 });

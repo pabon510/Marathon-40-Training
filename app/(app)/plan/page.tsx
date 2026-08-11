@@ -163,15 +163,23 @@ function WorkoutCard({
   );
 }
 
-export default async function PlanPage() {
+export default async function PlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ week?: string }>;
+}) {
   const supabase = await createClient();
   const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
   if (!profile) return <SeedProfileButton />;
 
   const today = todayLocalDate(profile.timezone);
-  const weekStart = mondayOfWeek(today);
+  const currentWeekStart = mondayOfWeek(today);
+  const nextWeekStart = addDays(currentWeekStart, 7);
+  const requestedWeek = (await searchParams).week;
+  const weekStart = requestedWeek === nextWeekStart ? nextWeekStart : currentWeekStart;
   const weekEnd = addDays(weekStart, 6);
+  const isCurrentWeek = weekStart === currentWeekStart;
 
   const [workouts, changes, weeklySetup] = await Promise.all([
     getPlannedWorkoutsForRange(supabase, user!.id, weekStart, weekEnd),
@@ -217,15 +225,38 @@ export default async function PlanPage() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Weekly plan</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">
+            {isCurrentWeek ? "This week" : "Next week"}
+          </p>
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">
             {formatDay(weekStart, false)}–{formatDay(weekEnd, false)}
           </h1>
         </div>
-        <Link href="/plan/setup" className="btn-secondary shrink-0">
-          {weeklySetup.data ? "Adjust week" : "Set up week"}
+        <Link href={`/plan/setup?week=${weekStart}`} className="btn-secondary shrink-0">
+          {weeklySetup.data ? "Adjust week" : isCurrentWeek ? "Set up week" : "Plan next week"}
         </Link>
       </div>
+
+      <nav className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1" aria-label="Choose plan week">
+        <Link
+          href={`/plan?week=${currentWeekStart}`}
+          aria-current={isCurrentWeek ? "page" : undefined}
+          className={`rounded-xl px-3 py-2 text-center text-sm font-semibold ${
+            isCurrentWeek ? "bg-white text-brand-800 shadow-sm" : "text-slate-600"
+          }`}
+        >
+          This week
+        </Link>
+        <Link
+          href={`/plan?week=${nextWeekStart}`}
+          aria-current={!isCurrentWeek ? "page" : undefined}
+          className={`rounded-xl px-3 py-2 text-center text-sm font-semibold ${
+            !isCurrentWeek ? "bg-white text-brand-800 shadow-sm" : "text-slate-600"
+          }`}
+        >
+          Next week
+        </Link>
+      </nav>
 
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-brand-900 to-brand-700 p-5 text-white shadow-lg">
         <div className="flex items-start justify-between">
@@ -300,7 +331,7 @@ export default async function PlanPage() {
         </div>
       </section>
 
-      <section>
+      {isCurrentWeek ? <section>
         <div className="mb-3 flex items-end justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Today</p>
@@ -327,9 +358,9 @@ export default async function PlanPage() {
             </div>
           </div>
         )}
-      </section>
+      </section> : null}
 
-      {days.some((date) => date < today) ? (
+      {isCurrentWeek && days.some((date) => date < today) ? (
         <section>
           <div className="mb-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Earlier this week</p>
@@ -379,12 +410,14 @@ export default async function PlanPage() {
       {days.some((date) => date > today) ? (
       <section>
         <div className="mb-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rest of the week</p>
-          <h2 className="text-lg font-bold text-slate-950">What’s ahead</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {isCurrentWeek ? "Rest of the week" : "Next week"}
+          </p>
+          <h2 className="text-lg font-bold text-slate-950">{isCurrentWeek ? "What’s ahead" : "Your planned workouts"}</h2>
         </div>
         <div className="space-y-3">
           {days
-            .filter((date) => date > today)
+            .filter((date) => !isCurrentWeek || date > today)
             .map((date) => {
               const workout = workouts.find((item) => item.local_date === date);
               if (!workout) {
