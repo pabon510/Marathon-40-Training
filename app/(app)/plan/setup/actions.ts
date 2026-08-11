@@ -3,10 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { generateWeekFromSetup, getOrCreateWeeklySetup, submitWeeklySetup } from "@/lib/services/planService";
+import {
+  generateWeekFromSetup,
+  getOrCreateWeeklySetup,
+  getPlannedWorkoutsForRange,
+  submitWeeklySetup,
+} from "@/lib/services/planService";
 import { isRecoveryRoutineSlug } from "@/domain/content/recoveryRoutines";
 import { addDays, mondayOfWeek, todayLocalDate } from "@/lib/date";
 import { getProfile } from "@/lib/services/profileService";
+import { mergeFixedAvailableDates } from "@/domain/planning/weeklyShape";
 
 export interface WeeklySetupFormState {
   error?: string;
@@ -30,7 +36,7 @@ export async function submitWeeklySetupAction(
   if (![currentWeekStart, addDays(currentWeekStart, 7)].includes(weekStartDate)) {
     return { error: "Only this week or next week can be planned here." };
   }
-  const availableDates = formData.getAll("availableDates").map(String).sort();
+  const submittedAvailableDates = formData.getAll("availableDates").map(String).sort();
   const intendedLongRunDate = String(formData.get("intendedLongRunDate") ?? "");
   const backupLongRunDate = String(formData.get("backupLongRunDate") ?? "");
   let activeRecoveryChoices: { localDate: string; routineSlug: string }[] = [];
@@ -39,6 +45,18 @@ export async function submitWeeklySetupAction(
   } catch {
     return { error: "The active-recovery choices could not be read." };
   }
+
+  const existing = await getOrCreateWeeklySetup(supabase, user.id, weekStartDate);
+  const fixedPlannedDates = existing && weekStartDate === currentWeekStart
+    ? (await getPlannedWorkoutsForRange(supabase, user.id, weekStartDate, today))
+        .filter((workout) => workout.workout_kind !== "active_recovery")
+        .map((workout) => workout.local_date)
+    : [];
+  const availableDates = mergeFixedAvailableDates(
+    submittedAvailableDates,
+    [...(existing?.available_dates ?? []), ...fixedPlannedDates],
+    existing && weekStartDate === currentWeekStart ? today : null,
+  );
 
   if (availableDates.length < 3 || availableDates.length > 5) {
     return { error: "Choose between 3 and 5 available days for this week." };
@@ -66,7 +84,6 @@ export async function submitWeeklySetupAction(
   }
 
   try {
-    const existing = await getOrCreateWeeklySetup(supabase, user.id, weekStartDate);
     const weeklySetupId = await submitWeeklySetup(supabase, user.id, {
       weekStartDate,
       availableDates,

@@ -1,11 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
-import { getOrCreateWeeklySetup, suggestedNextWeekStart } from "@/lib/services/planService";
+import {
+  getOrCreateWeeklySetup,
+  getPlannedWorkoutsForRange,
+  suggestedNextWeekStart,
+} from "@/lib/services/planService";
 import { todayLocalDate, addDays, mondayOfWeek } from "@/lib/date";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import { WeeklySetupForm } from "./setup-form";
 import type { Json } from "@/lib/supabase/types";
+import { mergeFixedAvailableDates } from "@/domain/planning/weeklyShape";
 
 function parseRecoveryChoices(value: Json): { localDate: string; routineSlug: string }[] {
   if (!Array.isArray(value)) return [];
@@ -47,6 +52,14 @@ export default async function PlanSetupPage({
     ? requestedWeek
     : suggestedNextWeekStart(today, latestSetup?.week_start_date ?? null);
   const existing = await getOrCreateWeeklySetup(supabase, user!.id, weekStartDate);
+  const fixedPlannedDates = existing && weekStartDate === currentWeekStart
+    ? (await getPlannedWorkoutsForRange(supabase, user!.id, weekStartDate, today))
+        .filter((workout) => workout.workout_kind !== "active_recovery")
+        .map((workout) => workout.local_date)
+    : [];
+  const repairedAvailableDates = existing
+    ? mergeFixedAvailableDates(existing.available_dates, fixedPlannedDates, weekStartDate === currentWeekStart ? today : null)
+    : null;
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
 
   return (
@@ -68,7 +81,7 @@ export default async function PlanSetupPage({
         existing={
           existing
             ? {
-                availableDates: existing.available_dates,
+                availableDates: repairedAvailableDates!,
                 intendedLongRunDate: existing.intended_long_run_date,
                 backupLongRunDate: existing.backup_long_run_date,
                 activeRecoveryChoices: parseRecoveryChoices(existing.active_recovery_choices),

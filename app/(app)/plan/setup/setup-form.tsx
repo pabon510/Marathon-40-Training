@@ -70,6 +70,11 @@ export function WeeklySetupForm({
     <form action={formAction} className="card space-y-4">
       <input type="hidden" name="weekStartDate" value={weekStartDate} />
       <input type="hidden" name="backupLongRunDate" value={backupDate} />
+      {isCurrentWeek
+        ? weekDates
+            .filter((date) => date <= todayDate && available.has(date))
+            .map((date) => <input key={`fixed-${date}`} type="hidden" name="availableDates" value={date} />)
+        : null}
       <input
         type="hidden"
         name="activeRecoveryChoices"
