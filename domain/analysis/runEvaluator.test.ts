@@ -101,6 +101,43 @@ describe("run evaluator", () => {
     expect(result.actual.includedWorkIntervalCount).toBe(4);
     expect(result.actual.workPaceSpreadSecondsPerMile).toBe(17);
     expect(result.improvementDirective).toContain("within about 20 seconds per mile");
+    expect(result.deterministicFindings.join(" ")).toContain("meeting the controlled-pacing target");
     expect(result.dataQualityWarnings.join(" ")).toContain("excluded");
+  });
+
+  it("uses completed threshold intervals instead of a conflicting legacy headline duration", () => {
+    const result = evaluateRun({
+      ...base,
+      workoutKind: "threshold_run",
+      plannedDurationMinutes: 35,
+      durationSeconds: 1822,
+      effort: 8,
+      isStroller: false,
+      prescription: {
+        durationMinutes: 35,
+        isThreshold: true,
+        isCalibration: false,
+        walkBreakGuidance: "Pace guided.",
+        intervals: [{ workMinutes: 5, restMinutes: 2, repeats: 4 }],
+      },
+      intervalSteps: [489, 474, 472, 484].map((pace, index) => ({
+        ordinal: index + 1,
+        stepType: "work" as const,
+        repetitionNumber: index + 1,
+        durationSeconds: 300,
+        distanceMiles: 0.62,
+        averagePaceSecondsPerMile: pace,
+        averageHeartRate: null,
+        maximumHeartRate: null,
+        included: true,
+        confidence: "high" as const,
+      })),
+    });
+
+    expect(result.authoritativeVerdict).toBe("harder_than_intended");
+    expect(result.actual.structuredWorkCompleted).toBe(true);
+    expect(result.deterministicFindings.join(" ")).not.toContain("less than 90 percent");
+    expect(result.progressionReason).toContain("overall effort was 8/10");
+    expect(result.progressionReason).not.toContain("duration");
   });
 });

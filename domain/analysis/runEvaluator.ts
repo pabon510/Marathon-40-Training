@@ -1,7 +1,7 @@
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import type { RunComparison } from "@/domain/analysis/runComparison";
 
-export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v3";
+export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v4";
 
 export interface RunIntervalEvidence {
   ordinal: number;
@@ -90,8 +90,22 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     .map((step) => step.averagePaceSecondsPerMile)
     .filter((pace): pace is number => pace !== null);
   const workPaceSpread = workPaces.length >= 2 ? Math.max(...workPaces) - Math.min(...workPaces) : null;
+  const onDurationWorkCount = plannedIntervals
+    ? includedWorkSteps.filter(
+        (step) => step.durationSeconds !== null && Math.abs(step.durationSeconds - plannedIntervals.workMinutes * 60) <= 5,
+      ).length
+    : 0;
+  const structuredWorkCompleted = Boolean(
+    input.workoutKind === "threshold_run"
+    && plannedIntervals
+    && intervalSteps.length > 0
+    && includedWorkSteps.length >= plannedIntervals.repeats
+    && onDurationWorkCount >= plannedIntervals.repeats,
+  );
 
-  if (durationRatio !== null) {
+  if (structuredWorkCompleted) {
+    findings.push("The complete prescribed work-interval structure is authoritative for threshold completion; total-duration mismatch is not treated as incomplete execution.");
+  } else if (durationRatio !== null) {
     if (durationRatio >= 0.9 && durationRatio <= 1.1) findings.push("Completed the prescribed duration within 10 percent.");
     else if (durationRatio < 0.9) findings.push("Completed less than 90 percent of the prescribed duration.");
     else findings.push("Ran more than 10 percent beyond the prescribed duration.");
@@ -113,13 +127,15 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
         : `Recorded ${includedWorkSteps.length} included work intervals.`,
     );
     if (plannedIntervals) {
-      const targetSeconds = plannedIntervals.workMinutes * 60;
-      const onDuration = includedWorkSteps.filter(
-        (step) => step.durationSeconds !== null && Math.abs(step.durationSeconds - targetSeconds) <= 5,
-      ).length;
-      findings.push(`${onDuration} of ${includedWorkSteps.length} work intervals were within five seconds of the planned ${plannedIntervals.workMinutes}-minute duration.`);
+      findings.push(`${onDurationWorkCount} of ${includedWorkSteps.length} work intervals were within five seconds of the planned ${plannedIntervals.workMinutes}-minute duration.`);
     }
-    if (workPaceSpread !== null) findings.push(`Included work-interval pace spread was ${Math.round(workPaceSpread)} seconds per mile.`);
+    if (workPaceSpread !== null) {
+      findings.push(
+        workPaceSpread <= 20
+          ? `Included work-interval pace spread was ${Math.round(workPaceSpread)} seconds per mile, meeting the controlled-pacing target of about 20 seconds per mile or less.`
+          : `Included work-interval pace spread was ${Math.round(workPaceSpread)} seconds per mile, above the controlled-pacing target of about 20 seconds per mile.`,
+      );
+    }
     if (excludedIntervalCount > 0) warnings.push(`${excludedIntervalCount} extracted interval row${excludedIntervalCount === 1 ? " was" : "s were"} excluded from analysis after review.`);
   }
 
@@ -147,7 +163,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   if (input.isStroller && input.averageCadenceSpm !== null) warnings.push("Stroller mechanics can make wrist-based cadence less reliable.");
 
   let verdict: RunVerdict = "successful";
-  if (!input.completedFull || (durationRatio !== null && durationRatio < 0.75)) verdict = "incomplete";
+  if (!input.completedFull || (!structuredWorkCompleted && durationRatio !== null && durationRatio < 0.75)) verdict = "incomplete";
   else if (input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats) verdict = "incomplete";
   else if (input.durationSeconds === null || input.effort === null) verdict = "insufficient_data";
   else if (
@@ -162,13 +178,23 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     && input.effort !== null
     && input.effort <= 7
     && (input.immediateKnee === null || input.immediateKnee < 6)
-    && (durationRatio === null || (durationRatio >= 0.9 && durationRatio <= 1.1))
+    && (structuredWorkCompleted || durationRatio === null || (durationRatio >= 0.9 && durationRatio <= 1.1))
     && !(input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats)
     && (!easyLike || ceiling === null || input.averageHr === null || input.averageHr <= ceiling);
   const progressionStatus = immediatelyEligible ? "pending_next_morning" : "not_eligible";
+  const immediateFailureReasons = [
+    !input.completedFull ? "the workout was marked incomplete" : null,
+    input.effort !== null && input.effort > 7 ? `overall effort was ${input.effort}/10, above the progression limit of 7/10` : null,
+    input.immediateKnee !== null && input.immediateKnee >= 6 ? `immediate knee discomfort was ${input.immediateKnee}/10` : null,
+    !structuredWorkCompleted && durationRatio !== null && (durationRatio < 0.9 || durationRatio > 1.1) ? "completed duration was outside the allowed range" : null,
+    input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats
+      ? `only ${includedWorkSteps.length} of ${plannedIntervals.repeats} work intervals were completed`
+      : null,
+    easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling ? `average heart rate exceeded the ${ceiling} bpm ceiling` : null,
+  ].filter((reason): reason is string => reason !== null);
   const progressionReason = immediatelyEligible
     ? "Execution checks passed so far; progression still requires the next-morning knee score not to increase and acceptable recovery."
-    : "At least one immediate execution requirement was not met, so this run does not qualify for progression.";
+    : `This run does not qualify for progression because ${immediateFailureReasons.join(" and ") || "an immediate execution requirement was not met"}.`;
 
   const midpoint = floor !== null && ceiling !== null ? Math.round((floor + ceiling) / 2) : null;
   const ceilingChartValue =
@@ -260,6 +286,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       intervalSteps,
       includedWorkIntervalCount: includedWorkSteps.length,
       workPaceSpreadSecondsPerMile: workPaceSpread,
+      structuredWorkCompleted,
     },
     deterministicFindings: findings,
     contextModifiers: context,

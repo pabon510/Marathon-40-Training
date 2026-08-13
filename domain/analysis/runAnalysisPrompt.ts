@@ -3,8 +3,8 @@ import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import type { WorkoutKind } from "@/domain/types";
 
 export const RUN_ANALYSIS_MODEL = "gpt-5.6-luna";
-export const RUN_ANALYSIS_VERSION = "run-analysis-v4";
-export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v4";
+export const RUN_ANALYSIS_VERSION = "run-analysis-v5";
+export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v5";
 
 const evidenceStatementSchema = z.object({
   text: z.string(),
@@ -41,6 +41,9 @@ Non-negotiable rules:
 - Do not diagnose pain or injury and do not alter the training plan.
 - Give exactly one primary improvement. It must implement improvementDirective, not introduce a new coaching priority.
 - For structured threshold work, use only included interval rows. Evaluate completed repetition count, adherence to work duration, pacing consistency, and late fade. Recovery pace is not a performance target.
+- When actual.structuredWorkCompleted is true, never describe the workout as incomplete or deficient because total duration differs from the headline duration.
+- A workPaceSpreadSecondsPerMile of 20 or less is controlled pacing. Never call it variable, inconsistent, or a reason progression failed.
+- When progression is not eligible, state the specific supplied progressionReason. Do not substitute duration or pacing as the cause.
 - Do not criticize a tiny or zero-distance step when it was excluded during review. Mention excluded evidence only as a data-quality limitation when relevant.
 - When comparison is present, explicitly quantify the most useful difference (especially average-HR difference for easy/long runs), name the prior date and context, and acknowledge duration or workout-type differences. Do not compare incompatible paces.
 - nextRunProtocol is authoritative and should be reflected in primaryImprovement. Do not weaken it into vague advice such as merely "slow down" or "walk sooner."

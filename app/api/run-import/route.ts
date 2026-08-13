@@ -128,7 +128,7 @@ export async function POST(request: Request) {
         ? `\nPrescribed easy-run HR ceiling for chart comparison: ${prescription.hrCeiling} bpm.`
         : "\nNo prescribed HR ceiling is available; return not_assessable for ceiling comparison.";
       const intervalContext = prescription?.intervals?.length
-        ? `\nPlanned structured workout: ${prescription.intervals.map((interval) => `${interval.repeats} repetitions of ${interval.workMinutes} minutes work and ${interval.restMinutes} minutes recovery`).join("; ")}. Use this only to label and validate clearly printed interval rows; never invent a missing row.`
+        ? `\nPlanned structured workout: ${prescription.warmupMinutes ?? 0} minutes warmup; ${prescription.intervals.map((interval) => `${interval.repeats} repetitions of ${interval.workMinutes} minutes work with ${interval.recoveryRepeats ?? interval.repeats} recoveries of ${interval.restMinutes} minutes`).join("; ")}; ${prescription.cooldownMinutes ?? 0} minutes cooldown. Use this only to label and validate clearly printed interval rows; never invent a missing row.`
         : "\nNo structured interval prescription is available. Still extract a clearly printed Garmin Intervals table if supplied.";
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

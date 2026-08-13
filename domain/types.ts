@@ -106,7 +106,9 @@ export interface RunPrescription {
   isThreshold: boolean;
   isCalibration: boolean;
   walkBreakGuidance: string;
-  intervals?: { workMinutes: number; restMinutes: number; repeats: number }[];
+  warmupMinutes?: number;
+  cooldownMinutes?: number;
+  intervals?: { workMinutes: number; restMinutes: number; repeats: number; recoveryRepeats?: number }[];
 }
 
 export interface ShortAlternative {

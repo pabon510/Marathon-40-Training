@@ -113,7 +113,7 @@ export default async function RunAnalysisPage({ params }: { params: Promise<{ se
             <section className="overflow-hidden rounded-2xl border border-blue-200 bg-white">
               <div className="bg-blue-950 p-4 text-white">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-200">Next-run playbook</p>
-                <p className="mt-1 text-sm text-blue-100">A concrete protocol for the next comparable easy or long run.</p>
+                <p className="mt-1 text-sm text-blue-100">A concrete protocol for the next comparable workout.</p>
               </div>
               <ol className="space-y-3 p-4 text-sm text-slate-700">
                 <li><strong className="text-slate-950">1. Start:</strong> {evidence.nextRunProtocol.start}</li>
