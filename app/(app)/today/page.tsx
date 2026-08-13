@@ -282,9 +282,12 @@ export default async function TodayPage() {
             </Link>
           </div>
         ) : (
-          <Link href="/workouts" className="mt-5 flex min-h-touch w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 shadow-sm">
-            {blocked ? "Open safe alternative" : "Start workout"}
-          </Link>
+          <div className="mt-5 space-y-2">
+            <Link href="/workouts" className="flex min-h-touch w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-950 shadow-sm">
+              {blocked ? "Open safe alternative" : "Start workout"}
+            </Link>
+            {!blocked ? <Link href="/workouts/move" className="flex min-h-touch w-full items-center justify-center text-sm font-semibold text-white underline">Do a different planned workout</Link> : null}
+          </div>
         )}
       </section>
 

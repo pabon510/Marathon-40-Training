@@ -84,6 +84,11 @@ export default async function PlanDayPage({ params }: { params: Promise<{ date: 
           Go to today&apos;s workout
         </Link>
       ) : null}
+      {relation === "past" && !["completed", "partial", "blocked"].includes(workout.status) ? (
+        <Link href={`/workouts/move?source=${workout.id}`} className="btn-secondary flex justify-center">
+          Do this workout today instead
+        </Link>
+      ) : null}
     </div>
   );
 }

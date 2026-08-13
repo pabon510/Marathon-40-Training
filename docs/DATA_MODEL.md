@@ -45,6 +45,8 @@ Use UUID primary keys, `created_at`/`updated_at` timestamps, and `user_id` on us
 
 A weekly reschedule sets `superseded_at` only on future plan rows that are no longer authoritative. The rows remain in place so historical IDs, workout-session links, substitutions, and audit context are preserved. Read paths and weekly progress views use the newest non-superseded row per user/date.
 
+A same-week workout move creates a new plan version, copies the source prescription onto today, and supersedes both the source and replaced target rows. The transaction rejects completed, partially completed, safety-blocked, or already-logged workouts and records change history on both dates.
+
 Run prescription stores duration, HR target/ceiling, pace context, intervals, walk-break guidance, and calibration flag.
 
 ### `plan_changes`

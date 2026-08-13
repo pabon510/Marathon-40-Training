@@ -619,6 +619,16 @@ export interface Database {
       v_weekly_plan_completion: ViewDef<{ user_id: string; week_start: string; planned_count: number; credited_count: number }>;
       v_checkin_completion: ViewDef<{ user_id: string; week_start: string; workout_days: number; checked_in_days: number }>;
     };
-    Functions: Record<string, never>;
+    Functions: {
+      move_planned_workout: {
+        Args: {
+          source_workout_id: string;
+          target_local_date: string;
+          move_reason_code: string;
+          move_reason_text: string;
+        };
+        Returns: string;
+      };
+    };
   };
 }

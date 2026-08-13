@@ -371,10 +371,14 @@ export default async function PlanPage({
               .map((date) => {
                 const workout = workouts.find((item) => item.local_date === date);
                 if (!workout) {
+                  const latestChange = changesByDate.get(date)?.at(-1);
                   return (
                     <div key={date} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <span className="text-sm font-semibold text-slate-600">{formatDay(date)}</span>
-                      <span className="text-xs text-slate-400">Rest</span>
+                      <div>
+                        <span className="text-sm font-semibold text-slate-600">{formatDay(date)}</span>
+                        {latestChange?.reason_code === "WORKOUT_MOVED" ? <p className="mt-1 text-xs text-amber-800">{latestChange.explanation}</p> : null}
+                      </div>
+                      <span className="text-xs text-slate-400">{latestChange?.reason_code === "WORKOUT_MOVED" ? "Moved" : "Rest"}</span>
                     </div>
                   );
                 }
@@ -421,16 +425,17 @@ export default async function PlanPage({
             .map((date) => {
               const workout = workouts.find((item) => item.local_date === date);
               if (!workout) {
+                const latestChange = changesByDate.get(date)?.at(-1);
                 return (
                   <div key={date} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <div className="flex items-center gap-3">
                       <span className="text-lg" aria-hidden="true">🌿</span>
                       <div>
                         <p className="text-sm font-semibold text-slate-700">{formatDay(date)}</p>
-                        <p className="text-xs text-slate-500">Rest day</p>
+                        <p className="text-xs text-slate-500">{latestChange?.reason_code === "WORKOUT_MOVED" ? latestChange.explanation : "Rest day"}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-slate-400">No workout debt</span>
+                    <span className="text-xs text-slate-400">{latestChange?.reason_code === "WORKOUT_MOVED" ? "Moved" : "No workout debt"}</span>
                   </div>
                 );
               }

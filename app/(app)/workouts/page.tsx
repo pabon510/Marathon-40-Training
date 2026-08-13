@@ -72,6 +72,9 @@ export default async function WorkoutsPage() {
           ? "Start logging, exercise by exercise"
           : "Log this workout"}
       </Link>
+      <Link href="/workouts/move" className="btn-secondary flex justify-center">
+        Do a different planned workout
+      </Link>
     </div>
   );
 }
