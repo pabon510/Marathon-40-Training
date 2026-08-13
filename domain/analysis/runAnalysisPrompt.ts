@@ -3,8 +3,8 @@ import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import type { WorkoutKind } from "@/domain/types";
 
 export const RUN_ANALYSIS_MODEL = "gpt-5.6-luna";
-export const RUN_ANALYSIS_VERSION = "run-analysis-v3";
-export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v3";
+export const RUN_ANALYSIS_VERSION = "run-analysis-v4";
+export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v4";
 
 const evidenceStatementSchema = z.object({
   text: z.string(),
@@ -40,6 +40,8 @@ Non-negotiable rules:
 - Treat questionable cadence or wrist-sensor readings as values to verify, not problems to fix.
 - Do not diagnose pain or injury and do not alter the training plan.
 - Give exactly one primary improvement. It must implement improvementDirective, not introduce a new coaching priority.
+- For structured threshold work, use only included interval rows. Evaluate completed repetition count, adherence to work duration, pacing consistency, and late fade. Recovery pace is not a performance target.
+- Do not criticize a tiny or zero-distance step when it was excluded during review. Mention excluded evidence only as a data-quality limitation when relevant.
 - When comparison is present, explicitly quantify the most useful difference (especially average-HR difference for easy/long runs), name the prior date and context, and acknowledge duration or workout-type differences. Do not compare incompatible paces.
 - nextRunProtocol is authoritative and should be reflected in primaryImprovement. Do not weaken it into vague advice such as merely "slow down" or "walk sooner."
 - State the measurable success condition supplied in nextRunProtocol.
@@ -55,7 +57,7 @@ Non-negotiable rules:
 const MODULES: Partial<Record<WorkoutKind, string>> = {
   easy_run: "Easy-run module: prioritize HR-target execution, duration, effort, walk-break use, and knee response. Pace is secondary context.",
   long_run: "Long-run module: prioritize controlled duration, HR ceiling, fueling/context only when supplied, effort, and delayed knee response. Do not reward extra duration.",
-  threshold_run: "Threshold module: evaluate the supplied interval or duration prescription. Do not judge short work segments by average HR alone because HR lags effort.",
+  threshold_run: "Threshold module: evaluate the supplied interval or duration prescription. Prioritize included work-row count, work duration, pacing consistency, and late fade. Recovery pace is not a target. Do not judge short work segments by average HR alone because HR lags effort.",
 };
 
 export function scenarioPrompt(input: {

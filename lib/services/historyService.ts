@@ -4,6 +4,7 @@ import type {
   ExerciseDefinitionRow,
   PostWorkoutCheckInRow,
   RunLogRow,
+  RunIntervalStepRow,
   StrengthLogRow,
   WorkoutSessionRow,
   WorkoutFuelingLogRow,
@@ -83,6 +84,7 @@ export interface SessionDetail {
   strengthLogs: StrengthLogWithExercise[];
   postCheckIn: PostWorkoutCheckInRow | null;
   fuelingLog: WorkoutFuelingLogRow | null;
+  intervalSteps: RunIntervalStepRow[];
 }
 
 /** Loads one session and everything attached to it. RLS restricts this to the caller's own rows. */
@@ -106,6 +108,11 @@ export async function getSessionDetail(
     supabase.from("post_workout_check_ins").select("*").eq("workout_session_id", sessionId).maybeSingle(),
     supabase.from("workout_fueling_logs").select("*").eq("workout_session_id", sessionId).maybeSingle(),
   ]);
+
+  const { data: intervalSteps, error: intervalError } = runLog
+    ? await supabase.from("run_interval_steps").select("*").eq("run_log_id", runLog.id).order("ordinal")
+    : { data: [], error: null };
+  if (intervalError) throw intervalError;
 
   const exerciseIds = [...new Set((strengthLogs ?? []).map((l) => l.exercise_id))];
   const exerciseById = new Map<string, ExerciseDefinitionRow>();
@@ -135,5 +142,6 @@ export async function getSessionDetail(
     strengthLogs: withExercises,
     postCheckIn: postCheckIn ?? null,
     fuelingLog: fuelingLog ?? null,
+    intervalSteps: intervalSteps ?? [],
   };
 }

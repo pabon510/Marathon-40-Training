@@ -1,7 +1,20 @@
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import type { RunComparison } from "@/domain/analysis/runComparison";
 
-export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v2";
+export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v3";
+
+export interface RunIntervalEvidence {
+  ordinal: number;
+  stepType: "warmup" | "work" | "recovery" | "cooldown" | "unknown";
+  repetitionNumber: number | null;
+  durationSeconds: number | null;
+  distanceMiles: number | null;
+  averagePaceSecondsPerMile: number | null;
+  averageHeartRate: number | null;
+  maximumHeartRate: number | null;
+  included: boolean;
+  confidence: "high" | "medium" | "low";
+}
 
 export interface RunEvidenceInput {
   workoutKind: WorkoutKind | null;
@@ -27,6 +40,7 @@ export interface RunEvidenceInput {
   maximumCadenceSpm: number | null;
   chartObservations: unknown;
   comparison: RunComparison | null;
+  intervalSteps?: RunIntervalEvidence[];
   fueling?: {
     gel100Count: number;
     gel100CafCount: number;
@@ -68,6 +82,14 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   const easyLike = input.workoutKind === "easy_run" || input.workoutKind === "long_run";
   const floor = input.prescription?.hrTarget ?? null;
   const ceiling = input.prescription?.hrCeiling ?? null;
+  const intervalSteps = input.intervalSteps ?? [];
+  const includedWorkSteps = intervalSteps.filter((step) => step.included && step.stepType === "work");
+  const excludedIntervalCount = intervalSteps.filter((step) => !step.included).length;
+  const plannedIntervals = input.prescription?.intervals?.[0] ?? null;
+  const workPaces = includedWorkSteps
+    .map((step) => step.averagePaceSecondsPerMile)
+    .filter((pace): pace is number => pace !== null);
+  const workPaceSpread = workPaces.length >= 2 ? Math.max(...workPaces) - Math.min(...workPaces) : null;
 
   if (durationRatio !== null) {
     if (durationRatio >= 0.9 && durationRatio <= 1.1) findings.push("Completed the prescribed duration within 10 percent.");
@@ -82,6 +104,23 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     else if (input.averageHr > ceiling) findings.push(`Average heart rate ${input.averageHr} bpm was above the prescribed ${ceiling} bpm ceiling.`);
     else findings.push(`Average heart rate ${input.averageHr} bpm was below the prescribed ${floor}-${ceiling} bpm range.`);
     warnings.push("Average and maximum heart rate cannot prove exact time spent above the ceiling.");
+  }
+
+  if (input.workoutKind === "threshold_run" && intervalSteps.length > 0) {
+    findings.push(
+      plannedIntervals
+        ? `Completed ${includedWorkSteps.length} included work intervals against ${plannedIntervals.repeats} prescribed.`
+        : `Recorded ${includedWorkSteps.length} included work intervals.`,
+    );
+    if (plannedIntervals) {
+      const targetSeconds = plannedIntervals.workMinutes * 60;
+      const onDuration = includedWorkSteps.filter(
+        (step) => step.durationSeconds !== null && Math.abs(step.durationSeconds - targetSeconds) <= 5,
+      ).length;
+      findings.push(`${onDuration} of ${includedWorkSteps.length} work intervals were within five seconds of the planned ${plannedIntervals.workMinutes}-minute duration.`);
+    }
+    if (workPaceSpread !== null) findings.push(`Included work-interval pace spread was ${Math.round(workPaceSpread)} seconds per mile.`);
+    if (excludedIntervalCount > 0) warnings.push(`${excludedIntervalCount} extracted interval row${excludedIntervalCount === 1 ? " was" : "s were"} excluded from analysis after review.`);
   }
 
   if (input.isStroller) context.push("Jogging-stroller run: pace may be compared only with other stroller runs.");
@@ -109,6 +148,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
 
   let verdict: RunVerdict = "successful";
   if (!input.completedFull || (durationRatio !== null && durationRatio < 0.75)) verdict = "incomplete";
+  else if (input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats) verdict = "incomplete";
   else if (input.durationSeconds === null || input.effort === null) verdict = "insufficient_data";
   else if (
     (easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling)
@@ -123,6 +163,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     && input.effort <= 7
     && (input.immediateKnee === null || input.immediateKnee < 6)
     && (durationRatio === null || (durationRatio >= 0.9 && durationRatio <= 1.1))
+    && !(input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats)
     && (!easyLike || ceiling === null || input.averageHr === null || input.averageHr <= ceiling);
   const progressionStatus = immediatelyEligible ? "pending_next_morning" : "not_eligible";
   const progressionReason = immediatelyEligible
@@ -164,6 +205,24 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     improvementDirective = `On the next comparable easy run, aim to settle nearer the middle of the HR range (about ${midpoint} bpm) instead of riding the ceiling.`;
   } else if (!input.completedFull) {
     improvementDirective = "Use the prescribed shorter alternative next time if available time may prevent completing the full session.";
+  } else if (input.workoutKind === "threshold_run" && includedWorkSteps.length > 0) {
+    const firstPace = includedWorkSteps[0]?.averagePaceSecondsPerMile ?? null;
+    const lastPace = includedWorkSteps.at(-1)?.averagePaceSecondsPerMile ?? null;
+    if (firstPace !== null && lastPace !== null && lastPace - firstPace > 20) {
+      improvementDirective = "Start the first work interval more controlled so the final repetition stays within about 20 seconds per mile of the first.";
+    } else if (workPaceSpread !== null && workPaceSpread > 30) {
+      improvementDirective = "Use a steadier threshold effort and keep the next set of work intervals within about 20 seconds per mile from fastest to slowest.";
+    } else {
+      improvementDirective = "Repeat the controlled threshold execution and keep the next set of work intervals within about 20 seconds per mile from fastest to slowest.";
+    }
+    nextRunProtocol = {
+      start: "Run the first work interval under control rather than treating it as the fastest repetition.",
+      intervene: "If a work interval is more than about 20 seconds per mile faster than the first, ease the next repetition back toward the planned threshold effort.",
+      resume: "Use the full prescribed easy recovery; recovery pace is not a performance target.",
+      success: plannedIntervals
+        ? `Complete all ${plannedIntervals.repeats} work intervals near ${plannedIntervals.workMinutes} minutes with no more than about 20 seconds per mile from fastest to slowest.`
+        : "Complete every prescribed work interval with no more than about 20 seconds per mile from fastest to slowest.",
+    };
   }
 
   return {
@@ -178,6 +237,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       hrCeiling: ceiling,
       walkBreaksAllowed: Boolean(input.prescription?.walkBreakGuidance),
       calibration: input.prescription?.isCalibration ?? false,
+      intervals: input.prescription?.intervals ?? [],
     },
     actual: {
       completedFull: input.completedFull,
@@ -197,6 +257,9 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       averageCadenceSpm: input.averageCadenceSpm,
       maximumCadenceSpm: input.maximumCadenceSpm,
       fueling: input.fueling ?? null,
+      intervalSteps,
+      includedWorkIntervalCount: includedWorkSteps.length,
+      workPaceSpreadSecondsPerMile: workPaceSpread,
     },
     deterministicFindings: findings,
     contextModifiers: context,

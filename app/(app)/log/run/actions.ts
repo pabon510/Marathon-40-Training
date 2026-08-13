@@ -11,6 +11,8 @@ import { todayLocalDate } from "@/lib/date";
 import type { AvailableTime, RunType, WorkoutKind } from "@/domain/types";
 import { isScaleScore } from "@/domain/content/trainingScales";
 import { fuelingPlanForWorkout, parseFuelingLogForm, saveWorkoutFuelingLog } from "@/lib/services/fuelingService";
+import { parseReviewedIntervals } from "@/domain/import/runIntervals";
+import { garminExtractionSchema } from "@/domain/import/garminScreenshot";
 
 export interface LogRunFormState {
   error?: string;
@@ -130,16 +132,39 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
   const unusualPainFlag = formData.get("unusualPainFlag") === "on";
   const notes = String(formData.get("notes") ?? "");
   const importId = String(formData.get("importId") ?? "").trim() || null;
+  let intervalSteps = [] as ReturnType<typeof parseReviewedIntervals>;
+  try {
+    intervalSteps = importId ? parseReviewedIntervals(formData.get("intervalSteps")) : [];
+  } catch {
+    return { error: "Review the extracted interval rows before saving." };
+  }
   if (importId) {
     const { data: importDraft } = await supabase
       .from("run_imports")
-      .select("id, status")
+      .select("id, status, extracted_payload")
       .eq("id", importId)
       .eq("user_id", user.id)
       .maybeSingle();
     if (!importDraft || importDraft.status !== "draft") {
       return { error: "This Garmin import is unavailable or has already been used." };
     }
+    const extraction = garminExtractionSchema.safeParse(importDraft.extracted_payload);
+    if (!extraction.success) return { error: "This Garmin extraction is incomplete. Retry the screenshot import." };
+    const originalByOrdinal = new Map(extraction.data.intervalSteps.map((step) => [step.ordinal, step]));
+    if (intervalSteps.some((step) => !originalByOrdinal.has(step.ordinal))) {
+      return { error: "One or more interval rows did not come from this Garmin import." };
+    }
+    intervalSteps = intervalSteps.map((step) => {
+      const original = originalByOrdinal.get(step.ordinal)!;
+      return {
+        ...step,
+        stepType: original.stepType,
+        repetitionNumber: original.repetitionNumber,
+        confidence: original.confidence,
+        evidence: original.evidence,
+        sourceImageIndex: original.sourceImageIndex,
+      };
+    });
   }
 
   const importedMetrics = {
@@ -190,6 +215,7 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
       strollerDiscomfortAreas,
       importId,
       dataSource: importId ? "garmin_screenshot" : "manual",
+      intervalSteps,
       ...(importId ? importedMetrics : {
         movingDurationSeconds: null,
         elapsedDurationSeconds: null,

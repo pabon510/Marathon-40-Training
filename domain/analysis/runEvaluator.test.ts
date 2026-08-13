@@ -73,4 +73,34 @@ describe("run evaluator", () => {
     expect(result.contextModifiers.join(" ")).toContain("mild stomach trouble");
     expect(result.contextModifiers.join(" ")).toContain("fading energy");
   });
+
+  it("evaluates confirmed threshold repetitions and ignores an excluded artifact", () => {
+    const result = evaluateRun({
+      ...base,
+      workoutKind: "threshold_run",
+      plannedDurationMinutes: 30,
+      durationSeconds: 1822,
+      isStroller: false,
+      prescription: {
+        durationMinutes: 30,
+        isThreshold: true,
+        isCalibration: false,
+        walkBreakGuidance: "Easy recovery between work intervals.",
+        intervals: [{ workMinutes: 5, restMinutes: 2, repeats: 4 }],
+      },
+      intervalSteps: [
+        { ordinal: 1, stepType: "work", repetitionNumber: 1, durationSeconds: 300, distanceMiles: 0.61, averagePaceSecondsPerMile: 489, averageHeartRate: null, maximumHeartRate: null, included: true, confidence: "high" },
+        { ordinal: 2, stepType: "work", repetitionNumber: 2, durationSeconds: 300, distanceMiles: 0.63, averagePaceSecondsPerMile: 474, averageHeartRate: null, maximumHeartRate: null, included: true, confidence: "high" },
+        { ordinal: 3, stepType: "work", repetitionNumber: 3, durationSeconds: 300, distanceMiles: 0.64, averagePaceSecondsPerMile: 472, averageHeartRate: null, maximumHeartRate: null, included: true, confidence: "high" },
+        { ordinal: 4, stepType: "work", repetitionNumber: 4, durationSeconds: 300, distanceMiles: 0.62, averagePaceSecondsPerMile: 484, averageHeartRate: null, maximumHeartRate: null, included: true, confidence: "high" },
+        { ordinal: 5, stepType: "work", repetitionNumber: 5, durationSeconds: 1.2, distanceMiles: 0, averagePaceSecondsPerMile: 516, averageHeartRate: null, maximumHeartRate: null, included: false, confidence: "high" },
+      ],
+    });
+
+    expect(result.authoritativeVerdict).not.toBe("incomplete");
+    expect(result.actual.includedWorkIntervalCount).toBe(4);
+    expect(result.actual.workPaceSpreadSecondsPerMile).toBe(17);
+    expect(result.improvementDirective).toContain("within about 20 seconds per mile");
+    expect(result.dataQualityWarnings.join(" ")).toContain("excluded");
+  });
 });

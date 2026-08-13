@@ -112,6 +112,15 @@ safety behavior.
 
 `id`, run log/session, ordinal, split distance (default 1 mile), duration seconds or pace seconds/mile.
 
+### `run_interval_steps`
+
+Reviewed Garmin structured-workout rows linked to a run log. Each row stores
+its order, step type (warmup, work, recovery, cooldown, or unknown), repetition
+number, duration, distance, average pace, optional heart rate, extraction
+confidence/evidence, source image, and whether the user included it in analysis.
+Questionable extra steps remain auditable but may be excluded. This additive
+detail never rewrites the parent run summary or existing history.
+
 ### `strength_logs`
 
 `id`, session, exercise id, ordinal, prescribed variant id, completed sets, representative/min reps, max reps if needed, load value, load unit, difficulty 1–10, substitution exercise id, notes.
