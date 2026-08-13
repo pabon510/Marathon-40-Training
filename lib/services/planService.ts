@@ -20,7 +20,7 @@ const STRENGTH_KIND_TO_TEMPLATE_SLUG: Partial<Record<WorkoutKind, string>> = {
   upper_core_safety: "upper_core_safety",
 };
 
-function buildRunPrescription(
+export function buildRunPrescription(
   kind: WorkoutKind,
   profile: Pick<ProfileRow, "easy_hr_floor" | "easy_hr_ceiling">,
   isCalibration: boolean,
@@ -52,7 +52,9 @@ function buildRunPrescription(
         isThreshold: true,
         isCalibration,
         walkBreakGuidance: "Pace guides this session; HR is secondary because it lags effort.",
-        intervals: [{ workMinutes: 5, restMinutes: 2, repeats: 4 }],
+        warmupMinutes: 5,
+        cooldownMinutes: 4,
+        intervals: [{ workMinutes: 5, restMinutes: 2, repeats: 4, recoveryRepeats: 3 }],
       };
     case "combined_short":
       return {

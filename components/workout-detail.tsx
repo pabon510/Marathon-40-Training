@@ -14,6 +14,7 @@ import { StrengthWarmupCard } from "@/components/strength-warmup";
 import { getRecoveryMovement } from "@/domain/content/recoveryMovementLibrary";
 import type { FuelingPlan } from "@/domain/fueling/fuelingPlan";
 import { FuelingPlanCard } from "@/components/fueling-plan-card";
+import { structuredRunDurationMinutes } from "@/domain/running/structuredRun";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -87,6 +88,10 @@ export function WorkoutDetailView({
 }) {
   const recoveryRoutine = kind === "active_recovery" ? getRecoveryRoutine(recoveryRoutineSlug) : null;
   const warmup = strength ? getStrengthWarmup(kind, locationChoice === "gym" ? "gym" : "home") : null;
+  const describedRunMinutes = runPrescription ? structuredRunDurationMinutes(runPrescription) : null;
+  const legacyWarmupCooldownMinutes = runPrescription && runPrescription.intervals && describedRunMinutes !== null
+    ? Math.max(0, runPrescription.durationMinutes - describedRunMinutes)
+    : 0;
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">{goal}</p>
@@ -101,10 +106,18 @@ export function WorkoutDetailView({
             </p>
           ) : null}
           {runPrescription.intervals ? (
-            <p className="text-sm text-slate-700">
-              {runPrescription.intervals[0]!.repeats} x {runPrescription.intervals[0]!.workMinutes} min work /{" "}
-              {runPrescription.intervals[0]!.restMinutes} min easy
-            </p>
+            <div className="space-y-1 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+              {runPrescription.warmupMinutes ? <p>Warmup · {runPrescription.warmupMinutes} min easy</p> : null}
+              <p>
+                Work · {runPrescription.intervals[0]!.repeats} × {runPrescription.intervals[0]!.workMinutes} min comfortably hard
+              </p>
+              <p>
+                Recovery · {runPrescription.intervals[0]!.recoveryRepeats ?? runPrescription.intervals[0]!.repeats} × {runPrescription.intervals[0]!.restMinutes} min easy, between work intervals
+              </p>
+              {runPrescription.cooldownMinutes ? <p>Cooldown · {runPrescription.cooldownMinutes} min easy</p> : null}
+              {legacyWarmupCooldownMinutes > 0 ? <p>Warmup + cooldown · {legacyWarmupCooldownMinutes} min easy total</p> : null}
+              <p className="pt-1 text-xs font-semibold text-slate-600">Total · {runPrescription.durationMinutes} min</p>
+            </div>
           ) : null}
           <p className="text-xs text-slate-500">{runPrescription.walkBreakGuidance}</p>
           {allowsStrollerContext(kind) && showLocationToggle ? (
