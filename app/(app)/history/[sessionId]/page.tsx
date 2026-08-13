@@ -6,6 +6,7 @@ import { getSessionDetail } from "@/lib/services/historyService";
 import { RunEditForm } from "./run-edit-form";
 import { StrengthEditForm } from "./strength-edit-form";
 import { FuelingLogSummary } from "@/components/fueling-log-summary";
+import { RunIntervalSummary } from "@/components/run-interval-summary";
 
 export default async function EditSessionPage({
   params,
@@ -44,6 +45,7 @@ export default async function EditSessionPage({
       {detail.session.session_type === "run" ? (
         <>
           <Link href={`/history/${sessionId}/analysis`} className="btn-primary flex w-full">View run review</Link>
+          <RunIntervalSummary steps={detail.intervalSteps} />
           <RunEditForm detail={detail} />
         </>
       ) : detail.session.session_type === "strength" ? (

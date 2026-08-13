@@ -34,6 +34,7 @@ describe("Garmin screenshot extraction", () => {
       averageCadenceSpm: field(111),
       maximumCadenceSpm: field(225),
       averageStrideLengthMeters: field(1.38),
+      intervalSteps: [],
       ...chartFields,
       warnings: [],
     });
@@ -60,6 +61,7 @@ describe("Garmin screenshot extraction", () => {
       elevationLossFeet: empty, aerobicTrainingEffect: empty, anaerobicTrainingEffect: empty,
       averageTemperatureF: empty, averageCadenceSpm: empty, maximumCadenceSpm: empty,
       averageStrideLengthMeters: empty, warnings: ["Not visible"],
+      intervalSteps: [],
       ...chartFields,
     });
     expect(Object.values(extractionToFormValues(extraction))).toEqual(

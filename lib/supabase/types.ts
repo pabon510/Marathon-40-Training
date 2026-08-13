@@ -293,6 +293,25 @@ export interface RunSplitRow {
   created_at: string;
 }
 
+export interface RunIntervalStepRow {
+  id: string;
+  run_log_id: string;
+  ordinal: number;
+  step_type: "warmup" | "work" | "recovery" | "cooldown" | "unknown";
+  repetition_number: number | null;
+  duration_seconds: number | null;
+  distance_miles: number | null;
+  average_pace_seconds_per_mile: number | null;
+  average_hr: number | null;
+  maximum_hr: number | null;
+  included: boolean;
+  extraction_confidence: "high" | "medium" | "low";
+  source_evidence: string;
+  source_image_index: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StrengthLogRow {
   id: string;
   workout_session_id: string;
@@ -550,6 +569,10 @@ export interface Database {
         Insertable<WeeklyCoachingReviewRow, "user_id" | "week_start" | "week_end" | "review_version" | "prompt_version" | "rules_version" | "model">
       >;
       run_splits: TableDef<RunSplitRow, Insertable<RunSplitRow, "run_log_id" | "ordinal" | "duration_seconds">>;
+      run_interval_steps: TableDef<
+        RunIntervalStepRow,
+        Insertable<RunIntervalStepRow, "run_log_id" | "ordinal" | "step_type" | "extraction_confidence">
+      >;
       strength_logs: TableDef<StrengthLogRow, Insertable<StrengthLogRow, "workout_session_id" | "exercise_id" | "ordinal">>;
       strength_set_logs: TableDef<StrengthSetLogRow, Insertable<StrengthSetLogRow, "strength_log_id" | "set_number">>;
       post_workout_check_ins: TableDef<

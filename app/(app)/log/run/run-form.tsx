@@ -11,15 +11,20 @@ import { logRunAction, type LogRunFormState } from "./actions";
 import { GarminScreenshotImport } from "./garmin-screenshot-import";
 import { RunAnalysisStatus } from "./run-analysis-status";
 import { FuelingLogFields } from "@/components/fueling-log-fields";
+import type { WorkoutKind } from "@/domain/types";
+import type { ReviewedIntervalStep } from "@/domain/import/runIntervals";
+import { IntervalReview, reviewedStepsFromExtraction } from "./interval-review";
 
 const initialState: LogRunFormState = {};
 
 export function RunLogForm({
   defaultStroller,
   strollerAllowed,
+  plannedWorkoutKind,
 }: {
   defaultStroller: boolean;
   strollerAllowed: boolean;
+  plannedWorkoutKind: WorkoutKind | null;
 }) {
   const [state, formAction, pending] = useActionState(logRunAction, initialState);
   const [isOverride, setIsOverride] = useState(false);
@@ -31,6 +36,7 @@ export function RunLogForm({
   const [kneeImmediatelyAfter, setKneeImmediatelyAfter] = useState<number | null>(null);
   const [importId, setImportId] = useState("");
   const [extraction, setExtraction] = useState<GarminExtraction>();
+  const [intervalSteps, setIntervalSteps] = useState<ReviewedIntervalStep[]>([]);
   const [values, setValues] = useState<GarminFormValues>({
     distanceMiles: "", durationMinutes: "", paceOverrideMinutes: "", averageHr: "",
     maximumHr: "", elevationGainFeet: "", movingDurationSeconds: "", elapsedDurationSeconds: "",
@@ -47,6 +53,7 @@ export function RunLogForm({
     setImportId(id);
     setExtraction(result);
     setValues(extractionToFormValues(result));
+    setIntervalSteps(reviewedStepsFromExtraction(result));
   }
 
   if (state.success) {
@@ -69,6 +76,7 @@ export function RunLogForm({
     <form action={formAction} className="card space-y-4">
       <GarminScreenshotImport onImported={applyImport} />
       <input type="hidden" name="importId" value={importId} />
+      <input type="hidden" name="intervalSteps" value={JSON.stringify(intervalSteps)} />
       {importId ? (
         <div className="rounded-lg border border-safety-ok/40 bg-green-50 p-3">
           <p className="text-sm font-semibold text-green-900">Garmin draft ready for review</p>
@@ -83,6 +91,11 @@ export function RunLogForm({
               {extraction.warnings.map((warning) => <li key={warning}>{warning}</li>)}
             </ul>
           ) : null}
+        </div>
+      ) : null}
+      {plannedWorkoutKind === "threshold_run" && !importId ? (
+        <div className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm text-brand-900">
+          Include Garmin&apos;s Intervals screen with your summary screenshots. The app will capture each work and recovery step for review.
         </div>
       ) : null}
       <div>
@@ -219,6 +232,10 @@ export function RunLogForm({
             Confidence and source evidence remain attached to this import for traceability.
           </p>
         </details>
+      ) : null}
+
+      {extraction ? (
+        <IntervalReview extraction={extraction} steps={intervalSteps} onChange={setIntervalSteps} />
       ) : null}
 
       <LabeledScale label="Overall effort" name="effort" min={1} max={10} labels={EFFORT_SCALE} value={effort} onChange={setEffort} required />

@@ -127,6 +127,9 @@ export async function POST(request: Request) {
       const prescriptionContext = prescription?.hrCeiling
         ? `\nPrescribed easy-run HR ceiling for chart comparison: ${prescription.hrCeiling} bpm.`
         : "\nNo prescribed HR ceiling is available; return not_assessable for ceiling comparison.";
+      const intervalContext = prescription?.intervals?.length
+        ? `\nPlanned structured workout: ${prescription.intervals.map((interval) => `${interval.repeats} repetitions of ${interval.workMinutes} minutes work and ${interval.restMinutes} minutes recovery`).join("; ")}. Use this only to label and validate clearly printed interval rows; never invent a missing row.`
+        : "\nNo structured interval prescription is available. Still extract a clearly printed Garmin Intervals table if supplied.";
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const response = await openai.responses.parse({
@@ -134,7 +137,7 @@ export async function POST(request: Request) {
         input: [{
           role: "user",
           content: [
-            { type: "input_text", text: GARMIN_EXTRACTION_PROMPT + prescriptionContext },
+            { type: "input_text", text: GARMIN_EXTRACTION_PROMPT + prescriptionContext + intervalContext },
             ...validated.map((image) => ({
               type: "input_image" as const,
               image_url: image.dataUrl,

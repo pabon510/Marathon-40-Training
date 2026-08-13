@@ -19,6 +19,13 @@ export async function buildRunEvidence(
   if (runError) throw runError;
   if (!runLog) return null;
 
+  const { data: intervalRows, error: intervalError } = await supabase
+    .from("run_interval_steps")
+    .select("*")
+    .eq("run_log_id", runLogId)
+    .order("ordinal");
+  if (intervalError) throw intervalError;
+
   const { data: session, error: sessionError } = await supabase
     .from("workout_sessions")
     .select("*")
@@ -134,6 +141,18 @@ export async function buildRunEvidence(
     maximumCadenceSpm: runLog.maximum_cadence_spm,
     chartObservations,
     comparison,
+    intervalSteps: (intervalRows ?? []).map((step) => ({
+      ordinal: step.ordinal,
+      stepType: step.step_type,
+      repetitionNumber: step.repetition_number,
+      durationSeconds: step.duration_seconds,
+      distanceMiles: step.distance_miles,
+      averagePaceSecondsPerMile: step.average_pace_seconds_per_mile,
+      averageHeartRate: step.average_hr,
+      maximumHeartRate: step.maximum_hr,
+      included: step.included,
+      confidence: step.extraction_confidence,
+    })),
     fueling: fuelingLog ? {
       gel100Count: fuelingLog.gel_100_count,
       gel100CafCount: fuelingLog.gel_100_caf_count,

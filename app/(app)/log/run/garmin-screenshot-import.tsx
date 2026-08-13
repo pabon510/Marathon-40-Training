@@ -62,7 +62,7 @@ export function GarminScreenshotImport({
     <section className="rounded-xl border border-brand-200 bg-brand-50 p-4">
       <h2 className="font-semibold text-slate-900">Import Garmin screenshots</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Choose up to five Garmin summary screenshots. They are processed temporarily and are not saved.
+        Choose up to five Garmin summary, chart, or interval screenshots. They are stored privately for 180 days for audit and reanalysis.
       </p>
       <input
         ref={inputRef}

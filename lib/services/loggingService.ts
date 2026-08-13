@@ -4,6 +4,7 @@ import { calculatePaceSecondsPerMile } from "@/domain/metrics/pace";
 import { evaluateDuringWorkoutSafety } from "@/domain/safety/hardBlock";
 import { recordSafetyEvent } from "@/lib/services/recalcService";
 import type { CompletionState, ExpectationResult, RunType, SessionType } from "@/domain/types";
+import type { ReviewedIntervalStep } from "@/domain/import/runIntervals";
 
 type Client = SupabaseClient<Database>;
 
@@ -107,6 +108,7 @@ export interface RunLogInput {
   maximumCadenceSpm?: number | null;
   averageStrideLengthMeters?: number | null;
   splits?: { ordinal: number; durationSeconds: number; splitDistanceMiles?: number }[];
+  intervalSteps?: ReviewedIntervalStep[];
 }
 
 export async function saveRunLog(supabase: Client, input: RunLogInput) {
@@ -160,6 +162,27 @@ export async function saveRunLog(supabase: Client, input: RunLogInput) {
       })),
     );
     if (splitsError) throw splitsError;
+  }
+
+  if (input.intervalSteps && input.intervalSteps.length > 0) {
+    const { error: intervalsError } = await supabase.from("run_interval_steps").insert(
+      input.intervalSteps.map((step) => ({
+        run_log_id: data.id as string,
+        ordinal: step.ordinal,
+        step_type: step.stepType,
+        repetition_number: step.repetitionNumber,
+        duration_seconds: step.durationSeconds,
+        distance_miles: step.distanceMiles,
+        average_pace_seconds_per_mile: step.averagePaceSecondsPerMile,
+        average_hr: step.averageHeartRate,
+        maximum_hr: step.maximumHeartRate,
+        included: step.included,
+        extraction_confidence: step.confidence,
+        source_evidence: step.evidence,
+        source_image_index: step.sourceImageIndex,
+      })),
+    );
+    if (intervalsError) throw intervalsError;
   }
 
   return data.id as string;

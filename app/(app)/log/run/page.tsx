@@ -22,6 +22,7 @@ export default async function LogRunPage() {
       <RunLogForm
         defaultStroller={workout?.run_context === "stroller"}
         strollerAllowed={strollerAllowed}
+        plannedWorkoutKind={workout?.workout_kind ?? null}
       />
       <Link href="/log/skip" className="block text-center text-sm text-slate-500 underline">
         Skip today&apos;s workout instead
