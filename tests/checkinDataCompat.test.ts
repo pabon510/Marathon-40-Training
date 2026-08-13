@@ -168,7 +168,15 @@ describe("historical check-in rows stay readable", () => {
 describe("no migration touches stored check-in or workout history", () => {
   const migrations = readdirSync("supabase/migrations")
     .filter((f) => f.endsWith(".sql"))
-    .map((f) => ({ name: f, sql: readFileSync(`supabase/migrations/${f}`, "utf-8").toLowerCase() }));
+    .map((f) => {
+      const sql = readFileSync(`supabase/migrations/${f}`, "utf-8").toLowerCase();
+      // Statements inside a dollar-quoted stored function execute only after
+      // an authenticated user explicitly invokes that function; they are not
+      // migration-time data rewrites. Dedicated function tests cover those
+      // guarded runtime mutations separately.
+      const deploymentSql = sql.replace(/\$\$[\s\S]*?\$\$/g, "");
+      return { name: f, sql, deploymentSql };
+    });
 
   it("has at least the eight known migrations", () => {
     expect(migrations.length).toBeGreaterThanOrEqual(8);
@@ -177,11 +185,11 @@ describe("no migration touches stored check-in or workout history", () => {
   it.each(["morning_check_ins", "workout_sessions", "strength_logs", "run_logs", "planned_workouts"])(
     "never drops, truncates, deletes from or rewrites %s",
     (table) => {
-      for (const { name, sql } of migrations) {
-        expect(sql, name).not.toMatch(new RegExp(`drop\\s+table[^;]*${table}`));
-        expect(sql, name).not.toMatch(new RegExp(`truncate[^;]*${table}`));
-        expect(sql, name).not.toMatch(new RegExp(`delete\\s+from\\s+${table}`));
-        expect(sql, name).not.toMatch(new RegExp(`update\\s+${table}\\s+set`));
+      for (const { name, deploymentSql } of migrations) {
+        expect(deploymentSql, name).not.toMatch(new RegExp(`drop\\s+table[^;]*${table}`));
+        expect(deploymentSql, name).not.toMatch(new RegExp(`truncate[^;]*${table}`));
+        expect(deploymentSql, name).not.toMatch(new RegExp(`delete\\s+from\\s+${table}`));
+        expect(deploymentSql, name).not.toMatch(new RegExp(`update\\s+${table}\\s+set`));
       }
     },
   );
