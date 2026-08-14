@@ -3,8 +3,8 @@ import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
 import type { WorkoutKind } from "@/domain/types";
 
 export const RUN_ANALYSIS_MODEL = "gpt-5.6-luna";
-export const RUN_ANALYSIS_VERSION = "run-analysis-v5";
-export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v5";
+export const RUN_ANALYSIS_VERSION = "run-analysis-v6";
+export const RUN_ANALYSIS_PROMPT_VERSION = "run-analysis-core-v6";
 
 const evidenceStatementSchema = z.object({
   text: z.string(),
@@ -44,10 +44,16 @@ Non-negotiable rules:
 - When actual.structuredWorkCompleted is true, never describe the workout as incomplete or deficient because total duration differs from the headline duration.
 - A workPaceSpreadSecondsPerMile of 20 or less is controlled pacing. Never call it variable, inconsistent, or a reason progression failed.
 - When progression is not eligible, state the specific supplied progressionReason. Do not substitute duration or pacing as the cause.
+- Workout execution and progression eligibility are separate. When actual.thresholdExecutionSuccessful is true, describe the threshold workout as successfully executed even if progressionStatus is not_eligible.
+- Threshold effort of 8/10 with completed, controlled intervals means repeat the prescription rather than progress it; it does not mean failed execution or harder than intended.
 - Do not criticize a tiny or zero-distance step when it was excluded during review. Mention excluded evidence only as a data-quality limitation when relevant.
+- Do not mention excluded interval artifacts when actual.thresholdExecutionSuccessful is true; they did not affect the conclusion.
 - When comparison is present, explicitly quantify the most useful difference (especially average-HR difference for easy/long runs), name the prior date and context, and acknowledge duration or workout-type differences. Do not compare incompatible paces.
 - nextRunProtocol is authoritative and should be reflected in primaryImprovement. Do not weaken it into vague advice such as merely "slow down" or "walk sooner."
 - State the measurable success condition supplied in nextRunProtocol.
+- primaryImprovement must be one concise action of at most two sentences. Do not restate every step of nextRunProtocol.
+- Set metricToVerify to null when the relevant interval count, duration, and pace spread are already established. Never ask the user to verify a target the current run already achieved.
+- Keep whatWentWell and contextThatMatters to the two most decision-relevant items each. Avoid repeating the same fact across sections.
 - Never expose internal enum values such as harder_than_intended. Translate them into natural language.
 - Format duration for people (for example 1:13:25 or 73 minutes), never as a raw count of seconds.
 - Do not use a routine next-morning knee check as metricToVerify because the app captures it automatically. Cadence may receive at most one brief optional verification note and must not distract from a clear HR execution problem.
@@ -60,7 +66,7 @@ Non-negotiable rules:
 const MODULES: Partial<Record<WorkoutKind, string>> = {
   easy_run: "Easy-run module: prioritize HR-target execution, duration, effort, walk-break use, and knee response. Pace is secondary context.",
   long_run: "Long-run module: prioritize controlled duration, HR ceiling, fueling/context only when supplied, effort, and delayed knee response. Do not reward extra duration.",
-  threshold_run: "Threshold module: evaluate the supplied interval or duration prescription. Prioritize included work-row count, work duration, pacing consistency, and late fade. Recovery pace is not a target. Do not judge short work segments by average HR alone because HR lags effort.",
+  threshold_run: "Threshold module: separate successful execution from progression. Prioritize included work-row count, work duration, pacing consistency, late fade, effort, and knee response. A controlled completed session at 8/10 is successful execution that should be repeated, not progressed. Recovery pace is not a target. Do not judge short work segments by average HR alone because HR lags effort.",
 };
 
 export function scenarioPrompt(input: {

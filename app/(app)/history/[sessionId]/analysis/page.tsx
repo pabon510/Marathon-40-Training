@@ -30,6 +30,7 @@ export default async function RunAnalysisPage({ params }: { params: Promise<{ se
     : null;
   const evidence = (analysis?.evidence_snapshot ?? null) as unknown as RunEvidencePackage | null;
   const nextMorning = analysis?.next_morning_result as { explanation?: string; successfulExposure?: boolean } | null;
+  const thresholdExecutionSuccessful = evidence?.actual.thresholdExecutionSuccessful === true;
 
   const { data: screenshots } = detail.runLog.import_id
     ? await supabase
@@ -124,7 +125,7 @@ export default async function RunAnalysisPage({ params }: { params: Promise<{ se
             </section>
           ) : null}
 
-          {result.metricToVerify ? (
+          {result.metricToVerify && !thresholdExecutionSuccessful ? (
             <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">Verify, don’t fix yet</p>
               <p className="mt-2 text-sm leading-6 text-amber-950">{result.metricToVerify.text}</p>
