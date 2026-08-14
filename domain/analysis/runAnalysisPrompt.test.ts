@@ -10,4 +10,10 @@ describe("run analysis prompt routing", () => {
     expect(prompt).toContain("Calibration module");
     expect(prompt).toContain("Limited-chart module");
   });
+
+  it("defines threshold effort 8 as successful execution that should be repeated", () => {
+    const prompt = scenarioPrompt({ workoutKind: "threshold_run", isStroller: false, runType: "outdoor", isCalibration: false, hasChartEvidence: true });
+    expect(prompt).toContain("separate successful execution from progression");
+    expect(prompt).toContain("8/10 is successful execution");
+  });
 });

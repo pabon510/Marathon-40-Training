@@ -1,7 +1,7 @@
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import type { RunComparison } from "@/domain/analysis/runComparison";
 
-export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v4";
+export const RUN_ANALYSIS_RULES_VERSION = "run-evaluator-v5";
 
 export interface RunIntervalEvidence {
   ordinal: number;
@@ -90,6 +90,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     .map((step) => step.averagePaceSecondsPerMile)
     .filter((pace): pace is number => pace !== null);
   const workPaceSpread = workPaces.length >= 2 ? Math.max(...workPaces) - Math.min(...workPaces) : null;
+  const thresholdPacingControlled = workPaceSpread !== null && workPaceSpread <= 20;
   const onDurationWorkCount = plannedIntervals
     ? includedWorkSteps.filter(
         (step) => step.durationSeconds !== null && Math.abs(step.durationSeconds - plannedIntervals.workMinutes * 60) <= 5,
@@ -101,6 +102,14 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     && intervalSteps.length > 0
     && includedWorkSteps.length >= plannedIntervals.repeats
     && onDurationWorkCount >= plannedIntervals.repeats,
+  );
+  const thresholdExecutionSuccessful = Boolean(
+    structuredWorkCompleted
+    && thresholdPacingControlled
+    && input.completedFull
+    && input.effort !== null
+    && input.effort <= 8
+    && (input.immediateKnee === null || input.immediateKnee < 6),
   );
 
   if (structuredWorkCompleted) {
@@ -136,7 +145,6 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
           : `Included work-interval pace spread was ${Math.round(workPaceSpread)} seconds per mile, above the controlled-pacing target of about 20 seconds per mile.`,
       );
     }
-    if (excludedIntervalCount > 0) warnings.push(`${excludedIntervalCount} extracted interval row${excludedIntervalCount === 1 ? " was" : "s were"} excluded from analysis after review.`);
   }
 
   if (input.isStroller) context.push("Jogging-stroller run: pace may be compared only with other stroller runs.");
@@ -168,9 +176,10 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   else if (input.durationSeconds === null || input.effort === null) verdict = "insufficient_data";
   else if (
     (easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling)
-    || input.effort > 7
+    || (input.workoutKind === "threshold_run" ? input.effort > 8 : input.effort > 7)
     || (input.immediateKnee !== null && input.immediateKnee >= 6)
   ) verdict = "harder_than_intended";
+  else if (input.workoutKind === "threshold_run" && thresholdExecutionSuccessful && input.effort === 8) verdict = "successful_with_caution";
   else if ((durationRatio !== null && durationRatio > 1.1) || warnings.length > 1) verdict = "successful_with_caution";
 
   const immediatelyEligible =
@@ -234,21 +243,31 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   } else if (input.workoutKind === "threshold_run" && includedWorkSteps.length > 0) {
     const firstPace = includedWorkSteps[0]?.averagePaceSecondsPerMile ?? null;
     const lastPace = includedWorkSteps.at(-1)?.averagePaceSecondsPerMile ?? null;
-    if (firstPace !== null && lastPace !== null && lastPace - firstPace > 20) {
+    if (thresholdExecutionSuccessful && input.effort === 8) {
+      improvementDirective = "Repeat the same threshold prescription without increasing pace, aiming for the full session to feel no harder than 7/10 overall.";
+      nextRunProtocol = {
+        start: "Use today’s controlled work-interval pace range as a ceiling, not a target to beat.",
+        intervene: "If the session is tracking toward 8/10 again before the final repetition, ease the remaining work intervals slightly rather than forcing today’s pace.",
+        resume: "Take every prescribed easy recovery in full; recovery pace is not a performance target.",
+        success: "Complete the same interval structure with controlled pacing, acceptable knee response, and overall effort of 7/10 or lower.",
+      };
+    } else if (firstPace !== null && lastPace !== null && lastPace - firstPace > 20) {
       improvementDirective = "Start the first work interval more controlled so the final repetition stays within about 20 seconds per mile of the first.";
     } else if (workPaceSpread !== null && workPaceSpread > 30) {
       improvementDirective = "Use a steadier threshold effort and keep the next set of work intervals within about 20 seconds per mile from fastest to slowest.";
     } else {
-      improvementDirective = "Repeat the controlled threshold execution and keep the next set of work intervals within about 20 seconds per mile from fastest to slowest.";
+      improvementDirective = "Maintain the controlled threshold execution; do not increase pace until the current prescription also meets the recovery and effort progression rules.";
     }
-    nextRunProtocol = {
-      start: "Run the first work interval under control rather than treating it as the fastest repetition.",
-      intervene: "If a work interval is more than about 20 seconds per mile faster than the first, ease the next repetition back toward the planned threshold effort.",
-      resume: "Use the full prescribed easy recovery; recovery pace is not a performance target.",
-      success: plannedIntervals
-        ? `Complete all ${plannedIntervals.repeats} work intervals near ${plannedIntervals.workMinutes} minutes with no more than about 20 seconds per mile from fastest to slowest.`
-        : "Complete every prescribed work interval with no more than about 20 seconds per mile from fastest to slowest.",
-    };
+    if (!nextRunProtocol && !thresholdPacingControlled) {
+      nextRunProtocol = {
+        start: "Run the first work interval at a controlled threshold effort.",
+        intervene: "If the work-interval pace range exceeds about 20 seconds per mile, ease the next repetition toward the established range.",
+        resume: "Use the full prescribed easy recovery; recovery pace is not a performance target.",
+        success: plannedIntervals
+          ? `Complete all ${plannedIntervals.repeats} work intervals near ${plannedIntervals.workMinutes} minutes with no more than about 20 seconds per mile from fastest to slowest.`
+          : "Complete every prescribed work interval with no more than about 20 seconds per mile from fastest to slowest.",
+      };
+    }
   }
 
   return {
@@ -287,6 +306,9 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       includedWorkIntervalCount: includedWorkSteps.length,
       workPaceSpreadSecondsPerMile: workPaceSpread,
       structuredWorkCompleted,
+      thresholdPacingControlled,
+      thresholdExecutionSuccessful,
+      excludedIntervalCount,
     },
     deterministicFindings: findings,
     contextModifiers: context,
