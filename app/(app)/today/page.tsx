@@ -79,7 +79,12 @@ function WeekMomentum({
   );
 }
 
-export default async function TodayPage() {
+export default async function TodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reminder?: string }>;
+}) {
+  const reminder = (await searchParams).reminder;
   const supabase = await createClient();
   const user = await getCurrentUser();
   const profile = await getProfile(supabase, user!.id);
@@ -184,6 +189,11 @@ export default async function TodayPage() {
     plannedMinutes: workout.planned_duration_minutes,
   });
   const fuelingPlan = fuelingPlanForWorkout(profile, kind, workout.planned_duration_minutes);
+  const logPath = kind === "active_recovery"
+    ? "/log/recovery"
+    : STRENGTH_KINDS.has(kind) || kind === "combined_short"
+      ? "/log/strength"
+      : "/log/run";
 
   const [{ data: latestChange }, { data: latestSession }] = await Promise.all([
     supabase
@@ -240,6 +250,18 @@ export default async function TodayPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">{formatToday(localDate)}</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">Today</h1>
       </header>
+
+      {reminder === "unlogged-workout" && !completed ? (
+        <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-800">Quick update</p>
+          <h2 className="mt-1 font-bold text-slate-950">What happened with today’s workout?</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <Link href="/workouts" className="btn-primary flex justify-center">Start workout</Link>
+            <Link href={logPath} className="btn-secondary flex justify-center">Log completed workout</Link>
+            <Link href="/log/skip" className="btn-secondary flex justify-center">Skip today</Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className={`overflow-hidden rounded-3xl bg-gradient-to-br ${completed ? "from-emerald-950 via-emerald-800 to-teal-600" : style.gradient} p-5 text-white shadow-lg`}>
         <div className="flex items-start justify-between gap-3">

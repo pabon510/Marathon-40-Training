@@ -38,7 +38,7 @@ and `AGENTS.md` for build precedence/rules.
    8. `supabase/migrations/0008_loading_and_logging_detail.sql`
 
    Continue with every later numbered migration in filename order through
-   `0016_weekly_coaching_reviews.sql`. Migration `0015` creates a private
+   `0022_push_reminders.sql`. Migration `0015` creates a private
    screenshot bucket, retention metadata, and saved run-analysis records.
    Migration `0016` adds saved, versioned weekly coaching recaps.
 
@@ -63,15 +63,25 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 OPENAI_API_KEY=
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:you@example.com
+CRON_SECRET=
 ```
 
 All are safe to set in Vercel. Only variables prefixed
 `NEXT_PUBLIC_` are ever bundled into browser-sent JavaScript;
-`SUPABASE_SERVICE_ROLE_KEY` stays server-side and is read only by the
-`POST /api/admin/seed` route (see step 3) — nothing in the client bundle
-imports it. `OPENAI_API_KEY` also stays server-side and powers Garmin
+`SUPABASE_SERVICE_ROLE_KEY` stays server-side and is read only by trusted
+seed/reminder operations — nothing in the client bundle imports it.
+`VAPID_PRIVATE_KEY` and `CRON_SECRET` are also server-only. `OPENAI_API_KEY` powers Garmin
 screenshot extraction and evidence-grounded run reviews. Redeploy after adding/changing env vars so the running
 deployment picks them up.
+
+Generate the VAPID pair once with `npm run vapid:generate`. Put the public
+value in `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, the private value in
+`VAPID_PRIVATE_KEY`, and do not rotate either while devices are subscribed.
+Set `VAPID_SUBJECT` to a `mailto:` address you control and use a long random
+value for `CRON_SECRET`.
 
 `.env.example` in this repo documents the same variables for anyone who
 also wants to run the app locally, plus `APP_TIMEZONE` and
@@ -175,6 +185,15 @@ its build environment.
 3. Deploy. Vercel runs `next build` automatically.
 4. Open the deployed URL on an iPhone, tap Share → Add to Home Screen to
    verify the installable PWA-like experience.
+5. Open the installed app, go to Settings → Push reminders, choose the
+   reminders you want, tap Enable, and allow notifications. Use Send a test
+   to verify delivery before waiting for a scheduled reminder.
+
+The six daily cron entries in `vercel.json` cover both Eastern daylight and
+standard time while remaining compatible with Vercel Hobby's once-per-day,
+per-cron restriction. The protected dispatcher checks the profile timezone,
+does nothing outside the intended local hour, and records each device/date/
+reminder combination once to prevent duplicate notifications.
 
 ## Repository structure
 
@@ -190,6 +209,8 @@ app/
   (app)/progress/         weekly totals, ease trend, knee chart, 4-week scorecard
   (app)/settings/         editable profile fields
   api/admin/seed/         session-gated one-click profile/library setup (see step 3)
+  api/push/               authenticated subscribe, disable, and test-push routes
+  api/reminders/          CRON_SECRET-protected scheduled dispatcher
 domain/                   pure, unit-tested deterministic rules (no Supabase imports)
   safety/                 hard-block evaluation
   adaptation/             knee + recovery rules, orchestrator
@@ -242,10 +263,9 @@ docs/                        product specification (read-only reference)
   confirm after next-morning knee score" — the *confirmed* version happens
   automatically the next morning through the normal check-in flow, which is
   fully wired and tested.
-- **Immediate post-launch features** (Resend reminders, web push,
-  consistency streak, personal records) are explicitly out of scope for
-  this core-launch pass per `AGENTS.md`/`docs/VERSION_1_SCOPE.md` and were
-  not built, so as not to delay the core.
+- **Immediate post-launch engagement**: browser push reminders are built.
+  Email reminders were intentionally omitted in favor of push. Consistency
+  streaks and personal records remain for Phase 7B.
 - **Dependency pin**: `@supabase/supabase-js` and `@supabase/ssr` are
   pinned to exact versions (`2.55.0` / `0.5.2`) rather than a caret range.
   Newer `@supabase/supabase-js` releases (tested up through the current

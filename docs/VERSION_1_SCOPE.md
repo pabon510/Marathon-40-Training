@@ -88,8 +88,9 @@
 
 ## Immediate post-launch
 
-- Resend email reminders; web push only if reliable and low effort.
-- 5:00 a.m. morning check-in reminder on planned workout days.
+- Browser push reminders; no email delivery.
+- 5:00 a.m. morning check-in reminder every day, including rest days, so
+  knee and recovery tracking remain complete.
 - Sunday 8:00 p.m. weekly planning reminder.
 - One unlogged-workout reminder: weekdays by 10:00 a.m.; weekends by 8:00 p.m.
 - Reminder opens Start workout / Log completed workout / Skip today.

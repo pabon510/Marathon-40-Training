@@ -60,6 +60,40 @@ export interface ProfileRow {
   updated_at: string;
 }
 
+export interface PushSubscriptionRow {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  device_label: string | null;
+  user_agent: string | null;
+  active: boolean;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReminderDeliveryRow {
+  id: string;
+  user_id: string;
+  push_subscription_id: string;
+  reminder_type: "daily_checkin" | "weekly_planning" | "unlogged_workout";
+  local_date: string;
+  status: "pending" | "sent" | "failed";
+  title: string;
+  body: string;
+  target_path: string;
+  attempt_count: number;
+  provider_status_code: number | null;
+  error_message: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface WorkoutFuelingLogRow {
   id: string;
   user_id: string;
@@ -530,6 +564,14 @@ export interface Database {
   public: {
     Tables: {
       profiles: TableDef<ProfileRow, Insertable<ProfileRow, "user_id">>;
+      push_subscriptions: TableDef<
+        PushSubscriptionRow,
+        Insertable<PushSubscriptionRow, "user_id" | "endpoint" | "p256dh" | "auth">
+      >;
+      reminder_deliveries: TableDef<
+        ReminderDeliveryRow,
+        Insertable<ReminderDeliveryRow, "user_id" | "push_subscription_id" | "reminder_type" | "local_date" | "title" | "body" | "target_path">
+      >;
       weekly_setups: TableDef<
         WeeklySetupRow,
         Insertable<WeeklySetupRow, "user_id" | "week_start_date" | "available_dates" | "intended_long_run_date" | "backup_long_run_date">
