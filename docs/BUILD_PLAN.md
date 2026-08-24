@@ -92,7 +92,10 @@ docs/
 
 ### 7. Immediate post-launch
 
-- Resend reminders and optional web push.
+- Browser push reminders for daily check-in, weekly planning, and one
+  unlogged-workout follow-up. Email delivery is intentionally omitted.
+- VAPID subscriptions, timezone-aware scheduled dispatch, deep links,
+  delivery audit trail, stale-subscription cleanup, and duplicate prevention.
 - Consistency score/streak UI and PR calculations.
 - Reminder delivery/idempotency tests.
 

@@ -4,9 +4,9 @@ import type { Database } from "@/lib/supabase/types";
 /**
  * Service-role Supabase client. NEVER import this from application code
  * (Server or Client Components, route handlers, server actions) — it is
- * used exclusively by scripts/seed-profile.ts, run standalone via
- * `npm run seed`, outside the Next.js build. Nothing under app/ imports
- * this module; keep it that way.
+ * used only by trusted server-side maintenance paths: the seed script and
+ * the CRON_SECRET-protected reminder dispatcher. Never import it into a
+ * Client Component or a user-facing route without an independent auth gate.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

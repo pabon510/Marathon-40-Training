@@ -71,7 +71,7 @@ Daily recommendation, morning check-in, rolling plan, gym/home/short variants, g
 
 ### Immediate post-launch
 
-Email reminders (Resend), optional web push if straightforward, weekly consistency score/streak presentation, and personal records. These may not delay the core usable release.
+Browser push reminders, weekly consistency score/streak presentation, and personal records. Email delivery is intentionally omitted. These may not delay the core usable release.
 
 ## Explicit non-goals
 

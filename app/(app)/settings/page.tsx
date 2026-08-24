@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/supabase/currentUser";
 import { getProfile } from "@/lib/services/profileService";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import { SettingsForm } from "./settings-form";
+import { PushReminderSettings } from "@/components/push-reminder-settings";
+import { parsePushReminderPreferences } from "@/domain/reminders/preferences";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -21,6 +23,10 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-slate-900">Settings</h1>
+      <PushReminderSettings
+        publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
+        initialPreferences={parsePushReminderPreferences(profile.reminder_preferences)}
+      />
       <SettingsForm profile={profile} />
 
       <div className="card">
