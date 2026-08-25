@@ -43,6 +43,12 @@
 - Initial easy guidance: approximately 140–150 bpm with 150 as provisional ceiling. If above 150 for about two minutes, advise slowing or walking.
 - First two weeks are calibration: maintain/reduce only; no progression.
 - One threshold session every other week during month one; use time or distance segments, with time preferred.
+- After calibration, vary the primary midweek run across threshold intervals,
+  easy running with relaxed strides, controlled aerobic fartlek, and a
+  progression-lite finish. Only one session per week may carry a quality
+  classification; faster formats never support stroller context.
+- Keep hills, short intervals, and continuous threshold inactive until later
+  readiness rules explicitly unlock them.
 - Pace guides threshold/short intervals; HR is secondary because it lags.
 - Garmin zones and 150 bpm ceiling remain explicitly provisional and editable.
 - Treadmill warmup mileage counts toward weekly mileage but not as a completed run workout.

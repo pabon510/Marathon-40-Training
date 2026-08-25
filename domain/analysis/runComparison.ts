@@ -1,9 +1,10 @@
-import type { WorkoutKind } from "@/domain/types";
+import type { RunWorkoutVariant, WorkoutKind } from "@/domain/types";
 
 export interface ComparableRunCandidate {
   runLogId: string;
   localDate: string;
   workoutKind: WorkoutKind | null;
+  runVariant?: RunWorkoutVariant | null;
   runType: string;
   isStroller: boolean;
   durationSeconds: number | null;
@@ -37,21 +38,25 @@ export function selectComparableRun(current: ComparableRunCandidate, candidates:
     && candidate.runType === current.runType
     && candidate.durationSeconds !== null
     && candidate.averageHr !== null
+    && (current.runVariant === null || current.runVariant === undefined || candidate.runVariant === current.runVariant)
     && (candidate.workoutKind === current.workoutKind || (easyLike(candidate.workoutKind) && easyLike(current.workoutKind))),
   );
   if (!eligible.length) return null;
 
   const scored = eligible.map((candidate) => {
+    const exactVariant = current.runVariant && candidate.runVariant === current.runVariant ? 150 : 0;
     const exactKind = candidate.workoutKind === current.workoutKind ? 100 : 50;
     const durationGap = current.durationSeconds === null ? 0 : Math.abs(candidate.durationSeconds! - current.durationSeconds) / 60;
     const recency = new Date(`${candidate.localDate}T00:00:00Z`).getTime() / 86_400_000;
-    return { candidate, score: exactKind - Math.min(durationGap, 40) + recency / 10_000 };
+    return { candidate, score: exactVariant + exactKind - Math.min(durationGap, 40) + recency / 10_000 };
   }).sort((a, b) => b.score - a.score);
   const prior = scored[0]!.candidate;
   const delta = (a: number | null, b: number | null) => a === null || b === null ? null : a - b;
   return {
     prior,
-    selectionReason: prior.workoutKind === current.workoutKind
+    selectionReason: current.runVariant && prior.runVariant === current.runVariant
+      ? "Most relevant earlier run with the same workout format, stroller context, and surface classification."
+      : prior.workoutKind === current.workoutKind
       ? "Most relevant earlier run with the same workout type, stroller context, and surface classification."
       : "Most relevant earlier aerobic run with the same stroller context and surface classification; duration and workout type differ.",
     differences: {

@@ -8,6 +8,7 @@ import { applyDailyRecalculation } from "@/lib/services/recalcService";
 import { todayLocalDate } from "@/lib/date";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
 import { canUseShorterAlternative, shorterAlternativeMinutes } from "@/domain/planning/shorterAlternative";
+import { resizeRunPrescription } from "@/domain/running/runVariety";
 
 export interface ShorterAlternativeState {
   error?: string;
@@ -43,7 +44,7 @@ export async function useShorterAlternativeAction(
 
   const runPrescription = workout.run_prescription as unknown as RunPrescription | null;
   const shorterRunPrescription = runPrescription
-    ? { ...runPrescription, durationMinutes: requested }
+    ? resizeRunPrescription(runPrescription, requested)
     : null;
 
   try {

@@ -6,6 +6,7 @@ import { getProfile } from "@/lib/services/profileService";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import { todayLocalDate } from "@/lib/date";
 import { allowsStrollerContext } from "@/domain/running/runContext";
+import type { RunPrescription } from "@/domain/types";
 
 export default async function LogRunPage() {
   const supabase = await createClient();
@@ -14,7 +15,10 @@ export default async function LogRunPage() {
   const workout = profile
     ? await getPlannedWorkoutForDate(supabase, user!.id, todayLocalDate(profile.timezone))
     : null;
-  const strollerAllowed = !workout || allowsStrollerContext(workout.workout_kind);
+  const strollerAllowed = !workout || allowsStrollerContext(
+    workout.workout_kind,
+    workout.run_prescription as unknown as RunPrescription | null,
+  );
 
   return (
     <div className="space-y-4">

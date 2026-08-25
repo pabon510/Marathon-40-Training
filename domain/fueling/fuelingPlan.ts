@@ -1,4 +1,4 @@
-import type { WorkoutKind } from "@/domain/types";
+import type { RunWorkoutVariant, WorkoutKind } from "@/domain/types";
 
 export const FUELING_RULES_VERSION = "fueling-v1.0";
 
@@ -19,9 +19,9 @@ function beforeStrength(profile: FuelingProfile): string {
   return "Have a normal meal with carbohydrate and protein 1–4 hours beforehand. If your last meal was more than 3–4 hours ago, use a light snack such as a banana or toast alongside the shake.";
 }
 
-function beforeShortRun(kind: WorkoutKind, profile: FuelingProfile): string {
+function beforeShortRun(kind: WorkoutKind, profile: FuelingProfile, variant?: RunWorkoutVariant): string {
   if (profile.workoutTimingPreference === "early_morning") {
-    if (kind === "threshold_run") {
+    if (kind === "threshold_run" || variant === "aerobic_fartlek") {
       return "Early-morning quality-run option: have water and one small, familiar carbohydrate serving immediately after waking, then begin when comfortable. A banana, toast with jam, applesauce, or a small sports drink works; avoid testing a new food today.";
     }
     return "Early-morning option: water may be enough if this short easy run feels good without food. If you wake hungry or tend to fade, have one small, familiar carbohydrate serving and begin when comfortable.";
@@ -98,6 +98,7 @@ export function buildFuelingPlan(
   kind: WorkoutKind,
   durationMinutes: number,
   profile: FuelingProfile,
+  runVariant?: RunWorkoutVariant,
 ): FuelingPlan {
   const targetProtein = proteinTarget(profile);
   const base = {
@@ -152,7 +153,7 @@ export function buildFuelingPlan(
       return {
         ...base,
         applies: true,
-        before: beforeShortRun(kind, profile),
+        before: beforeShortRun(kind, profile, runVariant),
         during: "No gel is normally needed for this duration. Bring water when conditions or thirst call for it.",
         after: `A normal meal is sufficient. If using the 30 g protein shake, pair it with carbohydrate when the run was demanding or a meal is delayed.`,
         productPlan: {

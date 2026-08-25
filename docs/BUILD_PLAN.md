@@ -98,6 +98,12 @@ docs/
   delivery audit trail, stale-subscription cleanup, and duplicate prevention.
 - Consistency score/streak UI and PR calculations.
 - Reminder delivery/idempotency tests.
+- Run-variety rotation: preserve calibration, then rotate threshold intervals,
+  easy running with strides, aerobic fartlek, and progression-lite while
+  retaining one meaningful quality session at most per week.
+- Keep continuous threshold, short intervals, hill repetitions, and recovery
+  run-walk in the taxonomy but inactive until explicit readiness criteria are
+  introduced. Compare completed runs only with the same active format.
 
 ## Implementation decisions
 

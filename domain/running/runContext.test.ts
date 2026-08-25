@@ -9,9 +9,19 @@ describe("stroller run context", () => {
     expect(allowsStrollerContext("combined_short")).toBe(false);
   });
 
+  it("blocks stroller context for an easy-kind prescription with faster segments", () => {
+    expect(allowsStrollerContext("easy_run", {
+      durationMinutes: 35,
+      variant: "easy_strides",
+      strollerEligible: false,
+      isThreshold: false,
+      isCalibration: false,
+      walkBreakGuidance: "Walk as needed.",
+    })).toBe(false);
+  });
+
   it("makes heart rate and duration primary for stroller running", () => {
     expect(runContextGuidance("stroller")).toContain("duration and heart rate");
     expect(runContextGuidance("stroller")).toContain("other stroller runs");
   });
 });
-

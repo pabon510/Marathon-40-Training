@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/types";
 import type { ProfileRow } from "@/lib/supabase/types";
-import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import type { RunPrescription, RunWorkoutVariant, WorkoutKind } from "@/domain/types";
 import {
   generateWeeklyShape,
   generateWeeklyShapeAroundLockedDays,
@@ -9,6 +9,7 @@ import {
 } from "@/domain/planning/weeklyShape";
 import { addDays, mondayOfWeek, nextWeekday } from "@/lib/date";
 import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
+import { activeMidweekVariant } from "@/domain/running/runVariety";
 
 type Client = SupabaseClient<Database>;
 
@@ -24,6 +25,7 @@ export function buildRunPrescription(
   kind: WorkoutKind,
   profile: Pick<ProfileRow, "easy_hr_floor" | "easy_hr_ceiling">,
   isCalibration: boolean,
+  requestedVariant?: RunWorkoutVariant,
 ): RunPrescription | null {
   const walkBreakGuidance = `If HR is above ${profile.easy_hr_ceiling} for about two minutes, slow down or take a walk break. Walk breaks are normal, successful execution.`;
 
@@ -31,6 +33,11 @@ export function buildRunPrescription(
     case "long_run":
       return {
         durationMinutes: 70,
+        variant: "long_easy",
+        displayName: "Long easy run",
+        intensityClass: "easy",
+        strollerEligible: true,
+        hrGuidanceScope: "whole_run",
         hrTarget: profile.easy_hr_floor,
         hrCeiling: profile.easy_hr_ceiling,
         isThreshold: false,
@@ -38,8 +45,73 @@ export function buildRunPrescription(
         walkBreakGuidance,
       };
     case "easy_run":
+      if (requestedVariant === "easy_strides") {
+        return {
+          durationMinutes: 35,
+          variant: "easy_strides",
+          displayName: "Easy run + strides",
+          intensityClass: "easy",
+          strollerEligible: false,
+          hrGuidanceScope: "easy_segments",
+          hrTarget: profile.easy_hr_floor,
+          hrCeiling: profile.easy_hr_ceiling,
+          isThreshold: false,
+          isCalibration,
+          walkBreakGuidance: `${walkBreakGuidance} Strides are relaxed and quick, never all-out sprints.`,
+          segments: [
+            { label: "Easy running", durationMinutes: 25, guidance: `Stay between ${profile.easy_hr_floor}-${profile.easy_hr_ceiling} bpm; walk briefly when needed.` },
+            { label: "Relaxed strides", durationMinutes: 0.25, repeats: 4, recoveryMinutes: 1.25, recoveryRepeats: 4, guidance: "Run smoothly for 15 seconds, then walk or jog easily for 75 seconds." },
+            { label: "Easy cooldown", durationMinutes: 4, guidance: "Return to relaxed easy effort." },
+          ],
+        };
+      }
+      if (requestedVariant === "aerobic_fartlek") {
+        return {
+          durationMinutes: 35,
+          variant: "aerobic_fartlek",
+          displayName: "Aerobic fartlek",
+          intensityClass: "quality",
+          strollerEligible: false,
+          hrGuidanceScope: "easy_segments",
+          hrTarget: profile.easy_hr_floor,
+          hrCeiling: profile.easy_hr_ceiling,
+          isThreshold: false,
+          isCalibration,
+          walkBreakGuidance: "The quicker portions should feel controlled, not like sprints. Recover fully at an easy effort before each repeat.",
+          segments: [
+            { label: "Easy warmup", durationMinutes: 10, guidance: `Settle into ${profile.easy_hr_floor}-${profile.easy_hr_ceiling} bpm.` },
+            { label: "Controlled pickups", durationMinutes: 0.5, repeats: 6, recoveryMinutes: 1.5, recoveryRepeats: 6, guidance: "Run quicker for 30 seconds, then run or walk easily for 90 seconds." },
+            { label: "Easy finish", durationMinutes: 13, guidance: "Finish relaxed under the easy-run ceiling." },
+          ],
+        };
+      }
+      if (requestedVariant === "progression_lite") {
+        return {
+          durationMinutes: 35,
+          variant: "progression_lite",
+          displayName: "Easy progression run",
+          intensityClass: "easy",
+          strollerEligible: false,
+          hrGuidanceScope: "easy_segments",
+          hrTarget: profile.easy_hr_floor,
+          hrCeiling: profile.easy_hr_ceiling,
+          isThreshold: false,
+          isCalibration,
+          walkBreakGuidance: "The progression finishes at a controlled steady effort, not threshold. If it becomes hard, return to easy running.",
+          segments: [
+            { label: "Easy running", durationMinutes: 20, guidance: `Stay between ${profile.easy_hr_floor}-${profile.easy_hr_ceiling} bpm.` },
+            { label: "Gradual progression", durationMinutes: 10, guidance: "Increase gently from easy to steady; do not reach threshold effort." },
+            { label: "Easy cooldown", durationMinutes: 5, guidance: "Ease fully back down." },
+          ],
+        };
+      }
       return {
         durationMinutes: 35,
+        variant: "easy_standard",
+        displayName: "Easy run",
+        intensityClass: "easy",
+        strollerEligible: true,
+        hrGuidanceScope: "whole_run",
         hrTarget: profile.easy_hr_floor,
         hrCeiling: profile.easy_hr_ceiling,
         isThreshold: false,
@@ -49,6 +121,11 @@ export function buildRunPrescription(
     case "threshold_run":
       return {
         durationMinutes: 35,
+        variant: "threshold_intervals",
+        displayName: "Threshold intervals",
+        intensityClass: "quality",
+        strollerEligible: false,
+        hrGuidanceScope: "secondary",
         isThreshold: true,
         isCalibration,
         walkBreakGuidance: "Pace guides this session; HR is secondary because it lags effort.",
@@ -59,6 +136,11 @@ export function buildRunPrescription(
     case "combined_short":
       return {
         durationMinutes: 15,
+        variant: "combined_short",
+        displayName: "Short easy run + strength",
+        intensityClass: "easy",
+        strollerEligible: false,
+        hrGuidanceScope: "whole_run",
         hrTarget: profile.easy_hr_floor,
         hrCeiling: profile.easy_hr_ceiling,
         isThreshold: false,
@@ -221,8 +303,17 @@ export async function generateWeekFromSetup(
   if (versionError || !planVersion) throw versionError ?? new Error("Failed to create plan version");
 
   const rows = [];
+  let variedMidweekRunAssigned = false;
   for (const day of shape.filter((candidate) => !preserveThroughDate || candidate.localDate > preserveThroughDate)) {
-    const runPrescription = buildRunPrescription(day.workoutKind, profile, isCalibration);
+    let requestedVariant: RunWorkoutVariant | undefined;
+    if (day.workoutKind === "threshold_run") {
+      requestedVariant = "threshold_intervals";
+      variedMidweekRunAssigned = true;
+    } else if (day.workoutKind === "easy_run" && !variedMidweekRunAssigned) {
+      requestedVariant = activeMidweekVariant(Math.max(1, weekNumber), isCalibration);
+      variedMidweekRunAssigned = true;
+    }
+    const runPrescription = buildRunPrescription(day.workoutKind, profile, isCalibration, requestedVariant);
     const templateId = await strengthTemplateId(supabase, day.workoutKind);
     const strengthMinutes = await templateDurationMinutes(supabase, day.workoutKind);
     const plannedDuration = (runPrescription?.durationMinutes ?? 0) + strengthMinutes;
@@ -234,7 +325,13 @@ export async function generateWeekFromSetup(
       workout_kind: day.workoutKind,
       priority: 0,
       status: "provisional" as const,
-      goal: GOALS[day.workoutKind],
+      goal: runPrescription?.variant === "easy_strides"
+        ? "Build aerobic fitness while practicing relaxed, efficient leg turnover."
+        : runPrescription?.variant === "aerobic_fartlek"
+          ? "Add controlled changes of pace without turning the run into sprint work."
+          : runPrescription?.variant === "progression_lite"
+            ? "Practice finishing smoothly at a steady effort without reaching threshold."
+            : GOALS[day.workoutKind],
       planned_duration_minutes: plannedDuration || 30,
       run_prescription: runPrescription as unknown as Database["public"]["Tables"]["planned_workouts"]["Insert"]["run_prescription"],
       strength_template_id: templateId,

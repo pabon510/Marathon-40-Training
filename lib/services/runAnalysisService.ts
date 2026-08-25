@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/types";
 import { evaluateRun, type RunEvidencePackage } from "@/domain/analysis/runEvaluator";
-import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import type { RunPrescription, RunWorkoutVariant, WorkoutKind } from "@/domain/types";
 import { selectComparableRun, type ComparableRunCandidate } from "@/domain/analysis/runComparison";
+import { runVariant } from "@/domain/running/runVariety";
 
 type Client = SupabaseClient<Database>;
 
@@ -10,7 +11,7 @@ export async function buildRunEvidence(
   supabase: Client,
   userId: string,
   runLogId: string,
-): Promise<{ evidence: RunEvidencePackage; scenario: { workoutKind: WorkoutKind | null; isStroller: boolean; runType: string; isCalibration: boolean; hasChartEvidence: boolean } } | null> {
+): Promise<{ evidence: RunEvidencePackage; scenario: { workoutKind: WorkoutKind | null; runVariant: RunWorkoutVariant | null; isStroller: boolean; runType: string; isCalibration: boolean; hasChartEvidence: boolean } } | null> {
   const { data: runLog, error: runError } = await supabase
     .from("run_logs")
     .select("*")
@@ -77,20 +78,29 @@ export async function buildRunEvidence(
       ? supabase.from("run_logs").select("*").in("workout_session_id", priorSessionIds)
       : Promise.resolve({ data: [], error: null }),
     priorPlannedIds.length
-      ? supabase.from("planned_workouts").select("id, workout_kind").in("id", priorPlannedIds)
+      ? supabase.from("planned_workouts").select("id, workout_kind, run_prescription").in("id", priorPlannedIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
   if (priorLogsResult.error) throw priorLogsResult.error;
   if (priorPlansResult.error) throw priorPlansResult.error;
   const sessionById = new Map((priorSessions ?? []).map((item) => [item.id, item]));
   const kindByPlanId = new Map((priorPlansResult.data ?? []).map((item) => [item.id, item.workout_kind as WorkoutKind]));
+  const prescriptionByPlanId = new Map((priorPlansResult.data ?? []).map((item) => [
+    item.id,
+    item.run_prescription as unknown as RunPrescription | null,
+  ]));
   const priorCandidates: ComparableRunCandidate[] = (priorLogsResult.data ?? []).flatMap((log) => {
     const priorSession = sessionById.get(log.workout_session_id);
     if (!priorSession) return [];
+    const priorKind = priorSession.planned_workout_id ? kindByPlanId.get(priorSession.planned_workout_id) ?? null : null;
+    const priorPrescription = priorSession.planned_workout_id
+      ? prescriptionByPlanId.get(priorSession.planned_workout_id) ?? null
+      : null;
     return [{
       runLogId: log.id,
       localDate: priorSession.local_date,
-      workoutKind: priorSession.planned_workout_id ? kindByPlanId.get(priorSession.planned_workout_id) ?? null : null,
+      workoutKind: priorKind,
+      runVariant: runVariant(priorPrescription, priorKind),
       runType: log.run_type,
       isStroller: log.is_stroller,
       durationSeconds: log.duration_seconds,
@@ -106,6 +116,7 @@ export async function buildRunEvidence(
     runLogId: runLog.id,
     localDate: session.local_date,
     workoutKind: (planned?.workout_kind as WorkoutKind | undefined) ?? null,
+    runVariant: runVariant(prescription, (planned?.workout_kind as WorkoutKind | undefined) ?? null),
     runType: runLog.run_type,
     isStroller: runLog.is_stroller,
     durationSeconds: runLog.duration_seconds,
@@ -170,6 +181,7 @@ export async function buildRunEvidence(
     evidence,
     scenario: {
       workoutKind: (planned?.workout_kind as WorkoutKind | undefined) ?? null,
+      runVariant: runVariant(prescription, (planned?.workout_kind as WorkoutKind | undefined) ?? null),
       isStroller: runLog.is_stroller,
       runType: runLog.run_type,
       isCalibration: prescription?.isCalibration ?? false,
