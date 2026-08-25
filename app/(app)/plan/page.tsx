@@ -7,6 +7,7 @@ import { todayLocalDate, mondayOfWeek, addDays } from "@/lib/date";
 import { WORKOUT_KIND_LABELS } from "@/lib/labels";
 import { SeedProfileButton } from "@/components/seed-profile-button";
 import type { RunPrescription, WorkoutKind } from "@/domain/types";
+import { runDisplayName } from "@/domain/running/runVariety";
 
 const RUN_KINDS = new Set(["easy_run", "long_run", "threshold_run"]);
 const STRENGTH_KINDS = new Set(["strength_a", "strength_b", "strength_full", "upper_core_safety"]);
@@ -106,7 +107,7 @@ function WorkoutCard({
                 {formatDay(date)} {isToday ? <span className="text-brand-700">· Today</span> : null}
               </p>
               <h3 className={`${prominent ? "text-xl" : "text-base"} truncate font-bold text-slate-950`}>
-                {WORKOUT_KIND_LABELS[kind] ?? style.label}
+                {runDisplayName(kind, run) ?? WORKOUT_KIND_LABELS[kind] ?? style.label}
               </h3>
             </div>
           </div>

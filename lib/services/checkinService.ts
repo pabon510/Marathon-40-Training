@@ -7,6 +7,7 @@ import { applyDailyRecalculation, recordRuleEvaluation, recordSafetyEvent } from
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
 import type { AvailableTime, RunPrescription, WorkoutKind } from "@/domain/types";
 import { finalizePreviousRunAnalyses } from "@/lib/services/runAnalysisService";
+import { downgradeToStandardEasy, resizeRunPrescription } from "@/domain/running/runVariety";
 
 type Client = SupabaseClient<Database>;
 
@@ -204,14 +205,21 @@ export async function submitCheckInAndRecalculate(supabase: Client, userId: stri
       ? WORKOUT_KIND_GOAL_DURATION.upper_core_safety ?? adaptation.cappedDurationMinutes
       : adaptation.cappedDurationMinutes;
 
-  const newRunPrescription: RunPrescription | null =
+  let newRunPrescription: RunPrescription | null =
     plannedWorkout.run_prescription && adaptation.chosenWorkoutKind !== "upper_core_safety"
       ? ({
-          ...(plannedWorkout.run_prescription as unknown as RunPrescription),
-          durationMinutes,
+          ...resizeRunPrescription(plannedWorkout.run_prescription as unknown as RunPrescription, durationMinutes),
           isThreshold: adaptation.chosenWorkoutKind === "threshold_run",
         } as RunPrescription)
       : null;
+  if (
+    newRunPrescription
+    && adaptation.chosenWorkoutKind === "easy_run"
+    && adaptation.category !== "full"
+    && newRunPrescription.variant !== "easy_standard"
+  ) {
+    newRunPrescription = downgradeToStandardEasy(newRunPrescription, durationMinutes);
+  }
 
   const recalcResult = await applyDailyRecalculation(supabase, userId, {
     localDate: input.localDate,

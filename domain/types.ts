@@ -68,6 +68,19 @@ export type ExpectationResult = "easier" | "as_expected" | "harder";
 
 export type RunType = "outdoor" | "treadmill" | "run_walk";
 
+export type RunWorkoutVariant =
+  | "easy_standard"
+  | "easy_strides"
+  | "aerobic_fartlek"
+  | "progression_lite"
+  | "threshold_intervals"
+  | "continuous_threshold"
+  | "short_intervals"
+  | "hill_repeats"
+  | "long_easy"
+  | "recovery_run_walk"
+  | "combined_short";
+
 export type LoadUnit = "lb" | "kg" | "bodyweight" | "band" | "n/a";
 
 /** 1 depleted … 5 excellent */
@@ -100,6 +113,11 @@ export type ReasonCode =
 
 export interface RunPrescription {
   durationMinutes: number;
+  variant?: RunWorkoutVariant;
+  displayName?: string;
+  intensityClass?: "easy" | "quality";
+  strollerEligible?: boolean;
+  hrGuidanceScope?: "whole_run" | "easy_segments" | "secondary";
   hrTarget?: number;
   hrCeiling?: number;
   paceReferenceSecondsPerMile?: number;
@@ -109,6 +127,14 @@ export interface RunPrescription {
   warmupMinutes?: number;
   cooldownMinutes?: number;
   intervals?: { workMinutes: number; restMinutes: number; repeats: number; recoveryRepeats?: number }[];
+  segments?: {
+    label: string;
+    durationMinutes: number;
+    guidance: string;
+    repeats?: number;
+    recoveryMinutes?: number;
+    recoveryRepeats?: number;
+  }[];
 }
 
 export interface ShortAlternative {

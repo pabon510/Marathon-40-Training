@@ -80,6 +80,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   const plannedSeconds = input.plannedDurationMinutes === null ? null : input.plannedDurationMinutes * 60;
   const durationRatio = plannedSeconds && input.durationSeconds ? input.durationSeconds / plannedSeconds : null;
   const easyLike = input.workoutKind === "easy_run" || input.workoutKind === "long_run";
+  const wholeRunHrGuided = easyLike && (input.prescription?.hrGuidanceScope ?? "whole_run") === "whole_run";
   const floor = input.prescription?.hrTarget ?? null;
   const ceiling = input.prescription?.hrCeiling ?? null;
   const intervalSteps = input.intervalSteps ?? [];
@@ -122,7 +123,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     warnings.push("Duration adherence could not be evaluated.");
   }
 
-  if (easyLike && input.averageHr !== null && floor !== null && ceiling !== null) {
+  if (wholeRunHrGuided && input.averageHr !== null && floor !== null && ceiling !== null) {
     if (input.averageHr >= floor && input.averageHr <= ceiling) findings.push(`Average heart rate ${input.averageHr} bpm was inside the prescribed ${floor}-${ceiling} bpm range.`);
     else if (input.averageHr > ceiling) findings.push(`Average heart rate ${input.averageHr} bpm was above the prescribed ${ceiling} bpm ceiling.`);
     else findings.push(`Average heart rate ${input.averageHr} bpm was below the prescribed ${floor}-${ceiling} bpm range.`);
@@ -175,7 +176,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
   else if (input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats) verdict = "incomplete";
   else if (input.durationSeconds === null || input.effort === null) verdict = "insufficient_data";
   else if (
-    (easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling)
+    (wholeRunHrGuided && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling)
     || (input.workoutKind === "threshold_run" ? input.effort > 8 : input.effort > 7)
     || (input.immediateKnee !== null && input.immediateKnee >= 6)
   ) verdict = "harder_than_intended";
@@ -189,7 +190,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     && (input.immediateKnee === null || input.immediateKnee < 6)
     && (structuredWorkCompleted || durationRatio === null || (durationRatio >= 0.9 && durationRatio <= 1.1))
     && !(input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats)
-    && (!easyLike || ceiling === null || input.averageHr === null || input.averageHr <= ceiling);
+    && (!wholeRunHrGuided || ceiling === null || input.averageHr === null || input.averageHr <= ceiling);
   const progressionStatus = immediatelyEligible ? "pending_next_morning" : "not_eligible";
   const immediateFailureReasons = [
     !input.completedFull ? "the workout was marked incomplete" : null,
@@ -199,7 +200,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     input.workoutKind === "threshold_run" && plannedIntervals && intervalSteps.length > 0 && includedWorkSteps.length < plannedIntervals.repeats
       ? `only ${includedWorkSteps.length} of ${plannedIntervals.repeats} work intervals were completed`
       : null,
-    easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling ? `average heart rate exceeded the ${ceiling} bpm ceiling` : null,
+    wholeRunHrGuided && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling ? `average heart rate exceeded the ${ceiling} bpm ceiling` : null,
   ].filter((reason): reason is string => reason !== null);
   const progressionReason = immediatelyEligible
     ? "Execution checks passed so far; progression still requires the next-morning knee score not to increase and acceptable recovery."
@@ -217,7 +218,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       : null;
   let improvementDirective = "Repeat this execution and collect another comparable run before changing the target.";
   let nextRunProtocol: RunEvidencePackage["nextRunProtocol"] = null;
-  if (easyLike && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling) {
+  if (wholeRunHrGuided && ceiling !== null && input.averageHr !== null && input.averageHr > ceiling) {
     const startLow = floor ?? Math.max(1, ceiling - 10);
     const startHigh = midpoint ?? ceiling - 5;
     const earlyAction = Math.max(startLow, ceiling - 2);
@@ -229,7 +230,7 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
       success: `Most of the visible HR chart stays below ${ceiling} bpm, average HR is at or below ${ceiling} bpm, and the run does not feel harder than intended.`,
     };
   } else if (
-    easyLike
+    wholeRunHrGuided
     && midpoint !== null
     && input.averageHr !== null
     && (
@@ -277,12 +278,17 @@ export function evaluateRun(input: RunEvidenceInput): RunEvidencePackage {
     progressionReason,
     prescription: {
       workoutKind: input.workoutKind,
+      runVariant: input.prescription?.variant ?? null,
+      displayName: input.prescription?.displayName ?? null,
+      intensityClass: input.prescription?.intensityClass ?? null,
+      hrGuidanceScope: input.prescription?.hrGuidanceScope ?? null,
       plannedDurationMinutes: input.plannedDurationMinutes,
       hrFloor: floor,
       hrCeiling: ceiling,
       walkBreaksAllowed: Boolean(input.prescription?.walkBreakGuidance),
       calibration: input.prescription?.isCalibration ?? false,
       intervals: input.prescription?.intervals ?? [],
+      segments: input.prescription?.segments ?? [],
     },
     actual: {
       completedFull: input.completedFull,

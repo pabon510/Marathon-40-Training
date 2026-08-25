@@ -15,6 +15,7 @@ import { getRecoveryMovement } from "@/domain/content/recoveryMovementLibrary";
 import type { FuelingPlan } from "@/domain/fueling/fuelingPlan";
 import { FuelingPlanCard } from "@/components/fueling-plan-card";
 import { structuredRunDurationMinutes } from "@/domain/running/structuredRun";
+import { runDisplayName } from "@/domain/running/runVariety";
 
 const RUN_ONLY_KINDS: WorkoutKind[] = ["long_run", "easy_run", "threshold_run"];
 
@@ -98,8 +99,11 @@ export function WorkoutDetailView({
 
       {runPrescription && (RUN_ONLY_KINDS.includes(kind) || kind === "combined_short") ? (
         <div className="card space-y-1">
-          <p className="text-sm font-semibold text-slate-900">Run</p>
-          <p className="text-sm text-slate-700">{runPrescription.durationMinutes} minutes, HR-guided</p>
+          <p className="text-sm font-semibold text-slate-900">{runDisplayName(kind, runPrescription) ?? "Run"}</p>
+          <p className="text-sm text-slate-700">
+            {runPrescription.durationMinutes} minutes
+            {runPrescription.hrGuidanceScope === "whole_run" ? ", HR-guided" : ""}
+          </p>
           {runPrescription.hrTarget && runPrescription.hrCeiling ? (
             <p className="text-sm text-slate-700">
               Target {runPrescription.hrTarget}-{runPrescription.hrCeiling} bpm
@@ -119,8 +123,27 @@ export function WorkoutDetailView({
               <p className="pt-1 text-xs font-semibold text-slate-600">Total · {runPrescription.durationMinutes} min</p>
             </div>
           ) : null}
+          {runPrescription.segments ? (
+            <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+              {runPrescription.segments.map((segment, index) => (
+                <div key={`${segment.label}-${index}`}>
+                  <p className="font-semibold text-slate-900">
+                    {segment.label} · {segment.repeats ? `${segment.repeats} × ` : ""}
+                    {segment.durationMinutes < 1 ? `${Math.round(segment.durationMinutes * 60)} sec` : `${segment.durationMinutes} min`}
+                  </p>
+                  <p className="text-xs text-slate-600">{segment.guidance}</p>
+                  {segment.recoveryMinutes ? (
+                    <p className="text-xs text-slate-500">
+                      Recovery · {segment.recoveryRepeats ?? segment.repeats ?? 1} × {segment.recoveryMinutes < 1 ? `${Math.round(segment.recoveryMinutes * 60)} sec` : `${segment.recoveryMinutes} min`}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+              <p className="pt-1 text-xs font-semibold text-slate-600">Total · {runPrescription.durationMinutes} min</p>
+            </div>
+          ) : null}
           <p className="text-xs text-slate-500">{runPrescription.walkBreakGuidance}</p>
-          {allowsStrollerContext(kind) && showLocationToggle ? (
+          {allowsStrollerContext(kind, runPrescription) && showLocationToggle ? (
             <div className="mt-3 border-t border-slate-100 pt-3">
               <RunContextToggle plannedWorkoutId={plannedWorkoutId} current={runContext} />
               <p className="mt-2 text-xs text-slate-600">{runContextGuidance(runContext)}</p>

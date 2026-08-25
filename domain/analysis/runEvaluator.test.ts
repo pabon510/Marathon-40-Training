@@ -51,6 +51,23 @@ describe("run evaluator", () => {
     }));
   });
 
+  it("does not judge a varied easy run by whole-run average HR", () => {
+    const result = evaluateRun({
+      ...base,
+      isStroller: false,
+      averageHr: 153,
+      maximumCadenceSpm: 160,
+      prescription: {
+        ...base.prescription!,
+        variant: "easy_strides",
+        hrGuidanceScope: "easy_segments",
+        strollerEligible: false,
+      },
+    });
+    expect(result.authoritativeVerdict).not.toBe("harder_than_intended");
+    expect(result.improvementDirective).not.toContain("early HR-control protocol");
+  });
+
   it("does not qualify an incomplete run for progression", () => {
     const result = evaluateRun({ ...base, completedFull: false, durationSeconds: 1200 });
     expect(result.authoritativeVerdict).toBe("incomplete");

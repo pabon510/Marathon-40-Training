@@ -13,6 +13,8 @@ import { isScaleScore } from "@/domain/content/trainingScales";
 import { fuelingPlanForWorkout, parseFuelingLogForm, saveWorkoutFuelingLog } from "@/lib/services/fuelingService";
 import { parseReviewedIntervals } from "@/domain/import/runIntervals";
 import { garminExtractionSchema } from "@/domain/import/garminScreenshot";
+import { allowsStrollerContext } from "@/domain/running/runContext";
+import type { RunPrescription } from "@/domain/types";
 
 export interface LogRunFormState {
   error?: string;
@@ -108,7 +110,10 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
   if (
     isStroller
     && plannedWorkout
-    && !["easy_run", "long_run"].includes(plannedWorkout.workout_kind)
+    && !allowsStrollerContext(
+      plannedWorkout.workout_kind,
+      plannedWorkout.run_prescription as unknown as RunPrescription | null,
+    )
     && !isUnplanned
   ) {
     return { error: "Jogging-stroller runs can only complete easy or long run workouts." };
@@ -259,7 +264,12 @@ export async function logRunAction(_prev: LogRunFormState, formData: FormData): 
     const fuelingKind = (plannedWorkout?.workout_kind ?? "easy_run") as WorkoutKind;
     const fuelingDurationMinutes = plannedWorkout?.planned_duration_minutes
       ?? (durationSeconds ? Math.round(durationSeconds / 60) : 0);
-    const fuelingPlan = fuelingPlanForWorkout(profile, fuelingKind, fuelingDurationMinutes);
+    const fuelingPlan = fuelingPlanForWorkout(
+      profile,
+      fuelingKind,
+      fuelingDurationMinutes,
+      plannedWorkout?.run_prescription as unknown as RunPrescription | null,
+    );
     let fuelingWarning: string | undefined;
     try {
       await saveWorkoutFuelingLog(

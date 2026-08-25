@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { RunEvidencePackage } from "@/domain/analysis/runEvaluator";
-import type { WorkoutKind } from "@/domain/types";
+import type { RunWorkoutVariant, WorkoutKind } from "@/domain/types";
 
 export const RUN_ANALYSIS_MODEL = "gpt-5.6-luna";
 export const RUN_ANALYSIS_VERSION = "run-analysis-v6";
@@ -71,12 +71,16 @@ const MODULES: Partial<Record<WorkoutKind, string>> = {
 
 export function scenarioPrompt(input: {
   workoutKind: WorkoutKind | null;
+  runVariant?: RunWorkoutVariant | null;
   isStroller: boolean;
   runType: string;
   isCalibration: boolean;
   hasChartEvidence: boolean;
 }): string {
   const modules = [input.workoutKind ? MODULES[input.workoutKind] : null];
+  if (input.runVariant === "easy_strides") modules.push("Strides module: evaluate the overall session as easy aerobic work with relaxed accelerations. Do not treat the brief strides as sprint intervals or judge the whole run by average HR alone.");
+  if (input.runVariant === "aerobic_fartlek") modules.push("Aerobic-fartlek module: assess whether the pickups stayed controlled and the easy recoveries were honored. Whole-run average HR is context, not a ceiling-adherence test.");
+  if (input.runVariant === "progression_lite") modules.push("Progression-lite module: assess a gradual easy-to-steady finish that never becomes threshold. Whole-run average HR is context, not a ceiling-adherence test.");
   if (input.isStroller) modules.push("Stroller module: acknowledge added effort and altered mechanics. Compare pace only with stroller runs and treat wrist cadence cautiously.");
   if (input.runType === "treadmill") modules.push("Treadmill module: avoid direct pace comparison with outdoor runs.");
   if (input.runType === "run_walk") modules.push("Run-walk module: planned walk breaks are successful execution, not failure.");

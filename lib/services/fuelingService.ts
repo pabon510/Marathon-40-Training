@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildFuelingPlan, type FuelingPlan, type FuelingProfile } from "@/domain/fueling/fuelingPlan";
 import type { Database, Json, ProfileRow } from "@/lib/supabase/types";
-import type { WorkoutKind } from "@/domain/types";
+import type { RunPrescription, WorkoutKind } from "@/domain/types";
 
 type Client = SupabaseClient<Database>;
 
@@ -21,8 +21,9 @@ export function fuelingPlanForWorkout(
   profile: ProfileRow,
   kind: WorkoutKind,
   durationMinutes: number,
+  prescription?: RunPrescription | null,
 ): FuelingPlan {
-  return buildFuelingPlan(kind, durationMinutes, fuelingProfileFromRow(profile));
+  return buildFuelingPlan(kind, durationMinutes, fuelingProfileFromRow(profile), prescription?.variant);
 }
 
 type FuelingLogInput = Omit<Database["public"]["Tables"]["workout_fueling_logs"]["Insert"],

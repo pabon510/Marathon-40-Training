@@ -13,6 +13,7 @@ import { getRecoveryRoutine } from "@/domain/content/recoveryRoutines";
 import { canUseShorterAlternative, shorterAlternativeMinutes } from "@/domain/planning/shorterAlternative";
 import { fuelingPlanForWorkout } from "@/lib/services/fuelingService";
 import { FuelingPlanCard } from "@/components/fueling-plan-card";
+import { runDisplayName } from "@/domain/running/runVariety";
 
 const STRENGTH_KINDS = new Set(["strength_a", "strength_b", "strength_full", "combined_short", "upper_core_safety"]);
 
@@ -117,8 +118,9 @@ export default async function TodayPage({
   const nextWorkout = weekWorkouts.find(
     (item) => item.local_date > localDate && !["skipped", "incomplete"].includes(item.status),
   );
+  const nextRun = nextWorkout?.run_prescription as unknown as RunPrescription | null;
   const nextLabel = nextWorkout
-    ? `${WORKOUT_KIND_LABELS[nextWorkout.workout_kind] ?? nextWorkout.workout_kind} on ${new Date(`${nextWorkout.local_date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}`
+    ? `${runDisplayName(nextWorkout.workout_kind, nextRun) ?? WORKOUT_KIND_LABELS[nextWorkout.workout_kind] ?? nextWorkout.workout_kind} on ${new Date(`${nextWorkout.local_date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}`
     : null;
 
   if (!workout) {
@@ -177,8 +179,8 @@ export default async function TodayPage({
 
   const kind = workout.workout_kind as WorkoutKind;
   const style = KIND_STYLE[kind] ?? KIND_STYLE.custom!;
-  const label = WORKOUT_KIND_LABELS[kind] ?? kind;
   const run = workout.run_prescription as unknown as RunPrescription | null;
+  const label = runDisplayName(kind, run) ?? WORKOUT_KIND_LABELS[kind] ?? kind;
   const recovery = kind === "active_recovery" ? getRecoveryRoutine(workout.recovery_routine_slug) : null;
   const completed = ["completed", "partial"].includes(workout.status);
   const blocked = workout.status === "blocked";
@@ -188,7 +190,7 @@ export default async function TodayPage({
     status: workout.status,
     plannedMinutes: workout.planned_duration_minutes,
   });
-  const fuelingPlan = fuelingPlanForWorkout(profile, kind, workout.planned_duration_minutes);
+  const fuelingPlan = fuelingPlanForWorkout(profile, kind, workout.planned_duration_minutes, run);
   const logPath = kind === "active_recovery"
     ? "/log/recovery"
     : STRENGTH_KINDS.has(kind) || kind === "combined_short"

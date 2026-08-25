@@ -1,5 +1,5 @@
 import type { WorkoutKind } from "@/domain/types";
-import { isThresholdWeek } from "@/domain/progression/running";
+import { activeMidweekVariant } from "@/domain/running/runVariety";
 
 export interface WeeklyShapeDay {
   localDate: string;
@@ -122,7 +122,7 @@ export function generateWeeklyShape(
     throw new Error("longRunDate must be one of the available dates");
   }
   const remaining = sorted.filter((d) => d !== longRunDate);
-  const threshold = isThresholdWeek(weekNumber);
+  const threshold = activeMidweekVariant(weekNumber, weekNumber <= 2) === "threshold_intervals";
 
   const longRunDay: WeeklyShapeDay = { localDate: longRunDate, workoutKind: "long_run" };
 

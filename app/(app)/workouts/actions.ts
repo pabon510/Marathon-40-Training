@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { RunContext } from "@/domain/running/runContext";
+import { allowsStrollerContext } from "@/domain/running/runContext";
+import type { RunPrescription } from "@/domain/types";
 
 export async function setLocationChoice(plannedWorkoutId: string, location: "gym" | "home") {
   const supabase = await createClient();
@@ -29,11 +31,14 @@ export async function setRunContext(plannedWorkoutId: string, context: RunContex
 
   const { data: workout } = await supabase
     .from("planned_workouts")
-    .select("workout_kind")
+    .select("workout_kind, run_prescription")
     .eq("id", plannedWorkoutId)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!workout || !["easy_run", "long_run"].includes(workout.workout_kind)) return;
+  if (!workout || !allowsStrollerContext(
+    workout.workout_kind,
+    workout.run_prescription as unknown as RunPrescription | null,
+  )) return;
 
   await supabase
     .from("planned_workouts")

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/types";
 import type { PlanTrigger, RunPrescription, WorkoutKind, WorkoutStatus } from "@/domain/types";
 import { getPlannedWorkoutForDate } from "@/lib/services/planService";
+import { allowsStrollerContext } from "@/domain/running/runContext";
 
 type Client = SupabaseClient<Database>;
 
@@ -48,7 +49,8 @@ export async function applyDailyRecalculation(supabase: Client, userId: string, 
   const materiallyChanged =
     !previous ||
     previous.workout_kind !== input.newWorkoutKind ||
-    previous.planned_duration_minutes !== input.newDurationMinutes;
+    previous.planned_duration_minutes !== input.newDurationMinutes ||
+    JSON.stringify(previous.run_prescription ?? null) !== JSON.stringify(input.newRunPrescription ?? null);
 
   if (!materiallyChanged && previous) {
     if (previous.status !== input.newStatus) {
@@ -100,7 +102,7 @@ export async function applyDailyRecalculation(supabase: Client, userId: string, 
       strength_template_id: previous.strength_template_id,
       recovery_routine_slug: previous.recovery_routine_slug,
       location_choice: input.newLocationChoice ?? previous.location_choice ?? "unspecified",
-      run_context: ["easy_run", "long_run"].includes(input.newWorkoutKind)
+      run_context: allowsStrollerContext(input.newWorkoutKind, input.newRunPrescription)
         ? previous.run_context
         : "standard",
       original_workout_id: previous.id,
